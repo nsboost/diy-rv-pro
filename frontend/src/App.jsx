@@ -8,6 +8,8 @@ import {
 
 import ClimateZoneCard from './components/ClimateZoneCard'
 import TankCard from './components/TankCard'
+import SetupWizard from './components/SetupWizard'
+import AutomationPanel from './components/AutomationPanel'
 
 import {
   powerHistory,
@@ -120,6 +122,18 @@ export default function App() {
           <TankCard title="Black Water" level={tankLevels.black} color="#f59e0b" />
           <TankCard title="Propane" level={tankLevels.propane} color="#22c55e" />
         </section>
+
+        <section className="section-header">
+          <h2>Automation</h2>
+        </section>
+
+        <AutomationPanel />
+
+        <section className="section-header">
+          <h2>Setup Wizard</h2>
+        </section>
+
+        <SetupWizard />
       </main>
     </div>
   )
