@@ -10,6 +10,9 @@ import ClimateZoneCard from './components/ClimateZoneCard'
 import TankCard from './components/TankCard'
 import SetupWizard from './components/SetupWizard'
 import AutomationPanel from './components/AutomationPanel'
+import AlertsPanel from './components/AlertsPanel'
+import PowerDistributionPanel from './components/PowerDistributionPanel'
+import SystemStatusBar from './components/SystemStatusBar'
 
 import {
   powerHistory,
@@ -45,6 +48,8 @@ export default function App() {
       </aside>
 
       <main className="main-content">
+        <SystemStatusBar />
+
         <header className="topbar">
           <div>
             <h1>System Overview</h1>
@@ -100,6 +105,11 @@ export default function App() {
               </ResponsiveContainer>
             </div>
           </div>
+        </section>
+
+        <section className="dual-grid">
+          <AlertsPanel />
+          <PowerDistributionPanel />
         </section>
 
         <section className="section-header">
