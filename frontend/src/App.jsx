@@ -13,6 +13,9 @@ import AutomationPanel from './components/AutomationPanel'
 import AlertsPanel from './components/AlertsPanel'
 import PowerDistributionPanel from './components/PowerDistributionPanel'
 import SystemStatusBar from './components/SystemStatusBar'
+import EnergyFlowPanel from './components/EnergyFlowPanel'
+import DeviceTemperaturePanel from './components/DeviceTemperaturePanel'
+import ConnectivityPanel from './components/ConnectivityPanel'
 
 import {
   powerHistory,
@@ -69,6 +72,8 @@ export default function App() {
           <MetricCard title="Inverter Load" value="42" unit="%" />
         </section>
 
+        <EnergyFlowPanel />
+
         <section className="dual-grid">
           <div className="graph-panel card">
             <div className="panel-title">Battery Voltage History</div>
@@ -107,9 +112,40 @@ export default function App() {
           </div>
         </section>
 
-        <section className="dual-grid">
+        <section className="triple-grid">
           <AlertsPanel />
           <PowerDistributionPanel />
+          <ConnectivityPanel />
+        </section>
+
+        <section className="dual-grid">
+          <DeviceTemperaturePanel />
+
+          <div className="card graph-panel">
+            <div className="panel-title">Environmental Monitoring</div>
+
+            <div className="environment-grid">
+              <div className="environment-item">
+                <span>Interior Zone 1</span>
+                <strong>72°F</strong>
+              </div>
+
+              <div className="environment-item">
+                <span>Interior Zone 2</span>
+                <strong>69°F</strong>
+              </div>
+
+              <div className="environment-item">
+                <span>Outdoor Temperature</span>
+                <strong>48°F</strong>
+              </div>
+
+              <div className="environment-item">
+                <span>Humidity</span>
+                <strong>42%</strong>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section className="section-header">
