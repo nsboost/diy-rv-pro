@@ -327,3 +327,7 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 ### Pending settings dialogs (October 10)
 - Automation save/delete and HVAC save now keep their dialogs open while awaiting completion. Cancel, close, and backdrop dismissal are disabled during the operation, retaining visible failure feedback. Dialogs announce their busy state for assistive technology.
 - Validation: 84 frontend tests passed and production build passed. Browser smoke check confirmed the populated automation editor opens and idle Cancel closes it, with no browser errors. A delayed physical-controller operation was not exercised; pending dismissal behavior is currently verified by implementation inspection rather than a live device test.
+
+### Re-importable configuration exports (October 10)
+- Exports now use compact JSON and pass the same raw validation and byte limit as imports before download. Invalid or oversized drafts produce visible errors. Download URLs remain available briefly instead of being immediately revoked; feedback clarifies that exports include current unsaved edits.
+- Validation: 85 frontend tests and production build passed. Browser downloaded the populated Demo RV export; the actual downloaded file passed import validation with two HVAC zones and two addressed sensors.

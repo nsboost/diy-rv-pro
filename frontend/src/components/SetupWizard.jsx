@@ -1,4 +1,4 @@
-import { importProfileJson } from '../config/importProfile.js'
+import { importProfileJson, exportProfileJson } from '../config/importProfile.js'
 import { useEffect, useMemo, useState } from 'react'
 import { boardPins, sensorOptions } from '../config/sensorInventory.js'
 import { validateProfile, sectionLimits } from '../config/validateProfile.js'
@@ -435,8 +435,12 @@ export default function SetupWizard({ initialProfile, onSave, onDiscover }) {
 
       <div className="config-toolbar">
         <button type="button" className="secondary-action" onClick={() => {
-          const url = URL.createObjectURL(new Blob([JSON.stringify(profile, null, 2)], {type: 'application/json'}))
-          const link = document.createElement('a'); link.href = url; link.download = 'diy-rv-configuration.json'; link.click(); URL.revokeObjectURL(url)
+          try {
+            const url = URL.createObjectURL(new Blob([exportProfileJson(profile)], {type: 'application/json'}))
+            const link = document.createElement('a'); link.href = url; link.download = 'diy-rv-configuration.json'; link.click()
+            setTimeout(() => URL.revokeObjectURL(url), 1000)
+            setStatus('Configuration exported. Unsaved edits are included; importing requires Save to apply.')
+          } catch (error) { setStatus(error.message || 'Configuration export failed') }
         }}>Export Configuration</button>
         <label className="secondary-action">Import Configuration<input type="file" accept="application/json,.json" disabled={saving} onChange={async event => {
           const file = event.target.files?.[0]

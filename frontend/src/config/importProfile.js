@@ -9,3 +9,9 @@ export function importProfileJson(text) {
   if (issues.length) throw new Error(issues.join('; '))
   return normalizeSystemProfile(raw)
 }
+
+export function exportProfileJson(profile) {
+  const text = JSON.stringify(profile)
+  importProfileJson(text)
+  return text
+}
