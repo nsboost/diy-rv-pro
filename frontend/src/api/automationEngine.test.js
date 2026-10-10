@@ -22,6 +22,20 @@ test('rule validation rejects coerced flags, unsafe identities and oversized dev
   assert.equal(normalizeAutomationRule({...alertRule,name:'é'.repeat(48)}).name.length,48)
 })
 
+test('change comparisons save without thresholds and scalar zero/false values are preserved', () => {
+  const rule = normalizeAutomationRule({...alertRule,trigger:{...alertRule.trigger,operator:'changes',value:'',holdFor:'0 sec'},reverse:{...alertRule.reverse,operator:'changes',value:''}})
+  const runtime = {}
+  const telemetry = {temperatures:[{id:'demo-temp-2',status:'ok',tempF:70,sampledAt:1000}]}
+  assert.deepEqual(evaluateRules([rule],telemetry,runtime,1000),[])
+  telemetry.temperatures[0].tempF = 71
+  assert.equal(evaluateRules([rule],telemetry,runtime,2000).length,1)
+  const numeric = normalizeAutomationRule({...alertRule,trigger:{...alertRule.trigger,value:0},action:{...alertRule.action,value:false},reverse:{...alertRule.reverse,value:0,restoreValue:false}})
+  assert.equal(numeric.trigger.value,'0')
+  assert.equal(numeric.action.value,'false')
+  assert.equal(numeric.reverse.value,'0')
+  assert.equal(numeric.reverse.restoreValue,'false')
+})
+
 test('manual HVAC modes respect output interlocks and Off clears active equipment', () => {
   const controller = createLocalController(cloneTelemetry(), {initialProfile:demoProfile})
   const now = Date.now()

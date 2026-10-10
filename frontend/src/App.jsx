@@ -536,7 +536,7 @@ function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile }) {
               </select>
             </Field>
             <Field label="Value">
-              <input value={draft.trigger.value} onChange={event => setGroup('trigger', 'value', event.target.value)} placeholder="80, on, 22:00-07:00" />
+              <input disabled={draft.trigger.operator === 'changes'} value={draft.trigger.value} onChange={event => setGroup('trigger', 'value', event.target.value)} placeholder={draft.trigger.operator === 'changes' ? 'No threshold needed for changes' : '80, on, 22:00-07:00'} />
             </Field>
             <Field label="Hold For">
               <input value={draft.trigger.holdFor} onChange={event => setGroup('trigger', 'holdFor', event.target.value)} placeholder="5 min" />
@@ -603,7 +603,7 @@ function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile }) {
               </select>
             </Field>
             <Field label="Value">
-              <input value={draft.reverse.value} onChange={event => setGroup('reverse', 'value', event.target.value)} />
+              <input disabled={draft.reverse.operator === 'changes'} value={draft.reverse.value} onChange={event => setGroup('reverse', 'value', event.target.value)} placeholder={draft.reverse.operator === 'changes' ? 'No threshold needed for changes' : 'Comparison value'} />
             </Field>
             <Field label="Restore Group">
               <select value={selectedRestoreCategory} onChange={event => setRestoreCategory(event.target.value)}>

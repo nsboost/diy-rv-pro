@@ -480,11 +480,11 @@ export function normalizeAutomationRule(rule) {
     source: String(rule.trigger?.source || '').trim(),
     label: String(rule.trigger?.label || rule.trigger?.source || '').trim(),
     operator: String(rule.trigger?.operator || '').trim(),
-    value: String(rule.trigger?.value || '').trim(),
+    value: String(rule.trigger?.value ?? '').trim(),
     holdFor: String(rule.trigger?.holdFor || '0 min').trim()
   }
 
-  if (!trigger.source || !automationOperators.has(trigger.operator) || !trigger.value) {
+  if (!trigger.source || !automationOperators.has(trigger.operator) || trigger.operator !== 'changes' && !trigger.value) {
     throw new Error('Automation trigger is incomplete')
   }
 
@@ -495,7 +495,7 @@ export function normalizeAutomationRule(rule) {
     targetLabel: String(rule.action?.targetLabel || rule.action?.target || '').trim(),
     command: String(rule.action?.command || '').trim(),
     commandLabel: String(rule.action?.commandLabel || rule.action?.command || '').trim(),
-    value: String(rule.action?.value || '').trim()
+    value: String(rule.action?.value ?? '').trim()
   }
 
   if (!automationActionTypes.has(action.type) || !action.target || !automationCommandTypes.has(action.command)) {
@@ -506,14 +506,14 @@ export function normalizeAutomationRule(rule) {
     enabled: rule.reverse?.enabled === true,
     source: String(rule.reverse?.source || trigger.source).trim(),
     operator: String(rule.reverse?.operator || '').trim(),
-    value: String(rule.reverse?.value || '').trim(),
+    value: String(rule.reverse?.value ?? '').trim(),
     category: String(rule.reverse?.category || '').trim(),
     target: String(rule.reverse?.target || action.target).trim(),
     targetLabel: String(rule.reverse?.targetLabel || rule.reverse?.target || action.targetLabel || action.target).trim(),
     command: String(rule.reverse?.command || '').trim(),
     commandLabel: String(rule.reverse?.commandLabel || rule.reverse?.command || '').trim(),
     action: String(rule.reverse?.action || '').trim(),
-    restoreValue: String(rule.reverse?.restoreValue || '').trim()
+    restoreValue: String(rule.reverse?.restoreValue ?? '').trim()
   }
   reverse.action = reverse.action || (reverse.target && reverse.command ? `${reverse.target}.${reverse.command}` : '')
   for (const [value, limit, label] of [[trigger.source,128,'Trigger source'],[trigger.value,256,'Trigger value'],[action.target,128,'Action target'],[action.value,256,'Action value'],[reverse.source,128,'Restore source'],[reverse.value,256,'Restore value'],[reverse.target,128,'Restore target'],[reverse.restoreValue,256,'Restore action value']]) {
@@ -521,7 +521,7 @@ export function normalizeAutomationRule(rule) {
   }
   if (action.command === 'sendAlert' && action.target !== 'notification' || reverse.enabled && reverse.command === 'sendAlert' && reverse.target !== 'notification') throw new Error('Alert actions must target notifications')
 
-  if (reverse.enabled && (!reverse.source || !automationOperators.has(reverse.operator) || !reverse.value || !automationCommandTypes.has(reverse.command) || !reverse.action)) {
+  if (reverse.enabled && (!reverse.source || !automationOperators.has(reverse.operator) || reverse.operator !== 'changes' && !reverse.value || !automationCommandTypes.has(reverse.command) || !reverse.action)) {
     throw new Error('Automation reverse check is incomplete')
   }
 
