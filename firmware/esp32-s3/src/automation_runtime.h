@@ -9,3 +9,5 @@ bool automation_runtime_control(const cJSON *command, char *error,
 void automation_runtime_append(cJSON *telemetry);
 
 void automation_runtime_inputs_pending(void);
+/* Caller owns *data and must free it. Reads retained bytes without repair. */
+esp_err_t automation_runtime_export_storage(void **data, size_t *size);

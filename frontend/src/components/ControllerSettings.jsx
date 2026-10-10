@@ -1,5 +1,5 @@
 import { clearAdminToken, storeAdminToken } from '../api/authStorage.js'
-import { requestControllerJson } from '../api/controllerRequest.js'
+import { requestControllerJson, requestControllerBackup } from '../api/controllerRequest.js'
 import { useEffect, useState } from 'react'
 import { fetchConfig, getAdminToken, saveConfig } from '../api/telemetryClient.js'
 
@@ -63,6 +63,17 @@ export default function ControllerSettings({ telemetry, apiOnline, onProfile, on
       <button className="primary-action" type="submit" disabled={busy}>{status.setupComplete ? 'Save Network Configuration' : 'Complete First-Boot Setup'}</button>
     </form>}
     <button className="wide-action" onClick={onSetup} type="button">Open Configuration Wizard</button>
+    {telemetry.controller.mode === 'device' && <div className="settings-form"><h3>Automation storage backup</h3><p>Download the original stored automation record before recovery. This preserves its exact bytes, including unreadable data, and does not change controller rules or clear a storage fault.</p><button className="secondary-action" disabled={busy || !apiOnline} type="button" onClick={() => run(async () => {
+      const bytes = await requestControllerBackup(getAdminToken())
+      const url = URL.createObjectURL(new Blob([bytes], {type:'application/octet-stream'}))
+      try {
+        const link = document.createElement('a')
+        link.href = url
+        link.download = 'diy-rv-automation-recovery.bin'
+        link.click()
+      } finally { setTimeout(() => URL.revokeObjectURL(url), 1000) }
+      setMessage('Automation backup downloaded. Keep this original file before attempting recovery.')
+    })}>Download Automation Backup</button></div>}
     {onLoadDemo && <div className="settings-form"><h3>Sample RV</h3><p>Load a sample inventory with two addressed temperature sensors, independent HVAC zones, battery, solar, inverter, generator and tanks. Your current demo inventory is backed up for restoration. Rules and alert history are retained.</p><button className="secondary-action" type="button" disabled={busy} onClick={() => run(async () => {await onLoadDemo();setMessage('Sample RV loaded in this browser. All values and equipment actions are simulated.')})}>Load Sample RV</button>{onRestoreDemo && <button className="secondary-action" type="button" disabled={busy} onClick={() => run(async () => {await onRestoreDemo();setMessage('Previous demo inventory restored.')})}>Restore Previous Demo Inventory</button>}</div>}
     {onLoadDemo && onDemoTimezone && <div className="settings-form"><h3>Demo schedule clock</h3><p>Local Time automation rules use this time zone. Changes are saved in this browser.</p><label className="config-field"><span>Schedule time zone</span><input value={scheduleTimezone} maxLength={39} placeholder="America/Denver" onChange={event => setScheduleTimezone(event.target.value)} /></label><button className="secondary-action" type="button" disabled={busy} onClick={() => run(async () => {await onDemoTimezone(scheduleTimezone.trim());setMessage('Demo schedule time zone saved.')})}>Save Schedule Time Zone</button></div>}
     {message && <p className="configurator-status" role="status">{message}</p>}

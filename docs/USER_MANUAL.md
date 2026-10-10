@@ -147,6 +147,15 @@ step. JSON inventory export/import is available as described above. Signed updat
 complete upgrade migration and installed recovery remain under development. Report observed
 errors with device identity and software version, excluding passwords/tokens.
 
+For an automation storage fault, connect with the admin token and open Settings
+then **Download Automation Backup**. Keep the downloaded
+`diy-rv-automation-recovery.bin` unchanged. It contains the original saved record,
+including any damaged bytes; it is separate from the JSON inventory backup.
+The button requires an authenticated connection. Downloading does not erase data,
+repair rules or resume automation. Repair/import and physical recovery testing
+remain under development. If download fails, the original is still retained;
+do not erase flash as a workaround.
+
 See [Installation Manual](INSTALLATION_MANUAL.md),
 [Bill of Materials](BILL_OF_MATERIALS.md) and
 [Delivery Status](DELIVERY_STATUS.md) for current support boundaries.

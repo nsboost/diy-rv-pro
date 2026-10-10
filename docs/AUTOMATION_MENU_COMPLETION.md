@@ -42,8 +42,11 @@ was also verified after correcting the misplaced pending-dialog guard.
   an uncommissioned-driver warning. GPIO/relay fields alone do not enable real
   HVAC, generator or water control. Exact interface/board mappings are needed.
 - [ ] Provide a supported recovery workflow for retained unreadable NVS automation
-  state. Current firmware preserves it and blocks writes; it does not provide an
-  export/repair interface. Verify storage failures without erasing originals.
+  state. Firmware now provides an authenticated raw-record backup endpoint and
+  Settings download menu, preserving corrupt bytes without writes. Client byte
+  preservation and invalid-response tests pass; disconnected menu behavior was
+  checked in the production browser. Repair/import and on-device NVS export/fault
+  verification remain incomplete. Verify storage failures without erasing originals.
 - [ ] Exercise pending save/delete/acknowledgement and keyboard/backdrop dismissal
   with delayed live requests. Idle browser flows passed; pending behavior is
   currently implementation-inspected and request-helper tested.

@@ -9,6 +9,7 @@
 #include "esp_check.h"
 #include "esp_http_server.h"
 #include "esp_log.h"
+#include "nvs.h"
 #include "feature_config.h"
 #include "security_inputs.h"
 #include "temperature_inputs.h"
@@ -94,6 +95,25 @@ static esp_err_t temperature_handler(httpd_req_t *request)
     if (!request_is_authorized(request)) return httpd_resp_send_err(request, HTTPD_401_UNAUTHORIZED, "Authentication required");
     if (temperature_config_pending) { httpd_resp_set_status(request, "503 Service Unavailable"); return httpd_resp_sendstr(request, "Restart controller to apply temperature bus changes"); }
     return send_json(request, temperature_inputs_to_json(), 200);
+}
+
+static esp_err_t automation_backup_handler(httpd_req_t *request)
+{
+    if (!request_is_authorized(request)) return httpd_resp_send_err(request, HTTPD_401_UNAUTHORIZED, "Authentication required");
+    void *bytes = NULL;
+    size_t size = 0;
+    esp_err_t result = automation_runtime_export_storage(&bytes, &size);
+    if (result != ESP_OK) {
+        if (result == ESP_ERR_NVS_NOT_FOUND) return httpd_resp_send_err(request, HTTPD_404_NOT_FOUND, "No saved automation record");
+        return httpd_resp_send_err(request, HTTPD_500_INTERNAL_SERVER_ERROR, "Saved automation record could not be read; original retained");
+    }
+    httpd_resp_set_type(request, "application/octet-stream");
+    httpd_resp_set_hdr(request, "Cache-Control", "no-store");
+    httpd_resp_set_hdr(request, "Content-Disposition", "attachment; filename=\"diy-rv-automation-recovery.bin\"");
+    httpd_resp_set_hdr(request, "X-Content-Type-Options", "nosniff");
+    result = httpd_resp_send(request, bytes, size);
+    free(bytes);
+    return result;
 }
 
 static esp_err_t config_get_handler(httpd_req_t *request)
@@ -337,6 +357,7 @@ esp_err_t api_server_start(api_context_t *context)
         {.uri = "/api/status", .method = HTTP_GET, .handler = status_handler},
         {.uri = "/api/telemetry", .method = HTTP_GET, .handler = telemetry_handler},
         {.uri = "/api/temperature/devices", .method = HTTP_GET, .handler = temperature_handler},
+        {.uri = "/api/automation/backup", .method = HTTP_GET, .handler = automation_backup_handler},
         {.uri = "/api/security/inputs", .method = HTTP_GET, .handler = security_inputs_handler},
         {.uri = "/api/config", .method = HTTP_GET, .handler = config_get_handler},
         {.uri = "/api/config", .method = HTTP_PUT, .handler = config_put_handler},

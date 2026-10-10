@@ -11,6 +11,12 @@ The ESP32-S3 serves the dashboard and local JSON API over the device access poin
   synchronized network time and a supported configured IANA zone.
 - `GET /api/telemetry`: authenticated snapshot, rules and persisted notifications. Equipment telemetry is explicitly marked `controller.equipmentMode: "prototype-simulation"`.
 - `GET /api/config`: sanitized configuration, including the saved RV feature profile. Requires authorization after setup.
+- `GET /api/automation/backup`: authenticated, uncached download of the exact
+  `rv_automation/state` NVS blob as `application/octet-stream`. Includes corrupt
+  bytes and the stored terminator, without parsing or modifying the record.
+  Returns 404 for an absent record and 500 for unreadable, empty, oversized
+  (over 65,537 bytes) or allocation-failed records; originals remain untouched.
+  This backup does not clear faults or import repaired data.
 - `PUT /api/config`: first-boot setup and subsequent configuration updates.
 - `POST /api/control`: rule CRUD, notification acknowledgment and prototype equipment controls. Always requires authorization. Body limit: 4,096 bytes.
 - `WS /ws/telemetry`: authorized telemetry WebSocket handshake.

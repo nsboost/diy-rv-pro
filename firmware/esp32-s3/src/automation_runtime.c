@@ -22,6 +22,31 @@ static bool configured;
 static bool inputs_pending;
 static bool storage_fault;
 static unsigned sequence;
+esp_err_t automation_runtime_export_storage(void **data, size_t *size) {
+  if (!data || !size || !lock) return ESP_ERR_INVALID_ARG;
+  *data = NULL;
+  *size = 0;
+  xSemaphoreTake(lock, portMAX_DELAY);
+  nvs_handle_t handle;
+  esp_err_t result = nvs_open("rv_automation", NVS_READONLY, &handle);
+  if (result == ESP_OK) {
+    size_t length = 0;
+    result = nvs_get_blob(handle, "state", NULL, &length);
+    if (result == ESP_OK && (!length || length > 65537)) result = ESP_ERR_INVALID_SIZE;
+    if (result == ESP_OK) {
+      void *bytes = malloc(length);
+      if (!bytes) result = ESP_ERR_NO_MEM;
+      else {
+        result = nvs_get_blob(handle, "state", bytes, &length);
+        if (result == ESP_OK) { *data = bytes; *size = length; }
+        else free(bytes);
+      }
+    }
+    nvs_close(handle);
+  }
+  xSemaphoreGive(lock);
+  return result;
+}
 static const char *text(const cJSON *obj, const char *key) {
   const cJSON *v = cJSON_GetObjectItemCaseSensitive(obj, key);
   return cJSON_IsString(v) ? v->valuestring : "";

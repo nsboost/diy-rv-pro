@@ -1,6 +1,36 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {requestControllerJson} from './controllerRequest.js'
+import {requestControllerJson, requestControllerBackup} from './controllerRequest.js'
+
+test('automation backup preserves corrupt binary bytes and uses authenticated uncached GET', async () => {
+  const original = globalThis.fetch
+  const bytes = new Uint8Array([0, 255, 123, 0, 128])
+  let calls = 0
+  globalThis.fetch = async (url, options) => {
+    calls++
+    assert.equal(url, '/api/automation/backup')
+    assert.equal(options.headers.Authorization, 'Bearer test-token')
+    assert.equal(options.cache, 'no-store')
+    assert.equal(options.method, undefined)
+    return new Response(bytes, {headers:{'Content-Type':'application/octet-stream'}})
+  }
+  try {
+    await assert.rejects(requestControllerBackup(''), /admin token/)
+    assert.equal(calls, 0)
+    assert.deepEqual(new Uint8Array(await requestControllerBackup('test-token')), bytes)
+    assert.equal(calls, 1)
+  } finally { globalThis.fetch = original }
+})
+
+test('automation backup rejects missing, oversized or nonbinary payloads', async () => {
+  const original = globalThis.fetch
+  try {
+    for (const [body, type] of [[new Uint8Array(0),'application/octet-stream'], [new Uint8Array(65538),'application/octet-stream'], ['<html>','text/html']]) {
+      globalThis.fetch = async () => new Response(body, {headers:{'Content-Type':type}})
+      await assert.rejects(requestControllerBackup('test-token'), /invalid/)
+    }
+  } finally { globalThis.fetch = original }
+})
 
 test('controller timeout includes stalled body reading and never retries a mutation', async () => {
   const original = globalThis.fetch
