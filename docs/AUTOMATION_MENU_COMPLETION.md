@@ -54,6 +54,12 @@ recovery tests remain outstanding.
   preservation and invalid-response tests pass; disconnected menu behavior was
   checked in the production browser. Repair/import and on-device NVS export/fault
   verification remain incomplete. Verify storage failures without erasing originals.
+  The portable recovery preparation helper now validates version-1/2 records,
+  creates a version-2 copy with every rule disabled and activation cleared, and
+  retains alert history without modifying the source. Host tests cover migration,
+  active-rule clearing and each allocation failure with zero leaked allocations.
+  All 30 firmware host tests and the ESP32-S3 build pass. This helper is not yet
+  connected to a repair endpoint or import menu; no recovery-completion claim.
 - [ ] Exercise pending save/delete/acknowledgement and keyboard/backdrop dismissal
   with delayed live requests. Idle browser flows passed; pending behavior is
   currently implementation-inspected and request-helper tested.

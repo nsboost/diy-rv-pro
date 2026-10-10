@@ -199,6 +199,29 @@ cJSON *automation_parse_saved_blob(const char *bytes, size_t size, char *error, 
   }
   return state;
 }
+cJSON *automation_prepare_recovery(const cJSON *state, char *error, size_t error_len) {
+  if (!automation_validate_saved_state(state, error, error_len)) return NULL;
+  cJSON *root = cJSON_CreateObject();
+  cJSON *rules = cJSON_Duplicate(get(state, "rules"), true);
+  cJSON *alerts = cJSON_Duplicate(get(state, "notifications"), true);
+  cJSON *active = cJSON_CreateArray();
+  if (!root || !rules || !alerts || !active) goto failed;
+  cJSON *rule;
+  cJSON_ArrayForEach(rule, rules) cJSON_SetBoolValue(cJSON_GetObjectItemCaseSensitive(rule, "enabled"), false);
+  if (!cJSON_AddNumberToObject(root, "version", 2)) goto failed;
+  if (!cJSON_AddItemToObject(root, "rules", rules)) goto failed;
+  rules = NULL;
+  if (!cJSON_AddItemToObject(root, "notifications", alerts)) goto failed;
+  alerts = NULL;
+  if (!cJSON_AddItemToObject(root, "activeRuleIds", active)) goto failed;
+  active = NULL;
+  if (!automation_validate_saved_state(root, error, error_len)) goto failed;
+  return root;
+failed:
+  cJSON_Delete(root); cJSON_Delete(rules); cJSON_Delete(alerts); cJSON_Delete(active);
+  if (error && error_len) snprintf(error, error_len, "Recovery record could not be prepared");
+  return NULL;
+}
 bool automation_validate_saved_state(const cJSON *state, char *error,
                                      size_t error_len) {
   const cJSON *version = get(state, "version"),

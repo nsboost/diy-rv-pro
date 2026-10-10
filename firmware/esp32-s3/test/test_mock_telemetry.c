@@ -546,6 +546,52 @@ static void test_timezone_rules_preserve_dst_and_reject_unknown_zones(void) {
     TEST_ASSERT_NULL(diy_timezone_posix("Invalid/Zone"));
     TEST_ASSERT_NULL(diy_timezone_posix(NULL));
 }
+static void test_recovery_preparation_disables_rules_without_changing_original(void) {
+    automation_engine_t engine = {0};
+    cJSON *rules = temperature_rules(), *alerts = cJSON_CreateArray();
+    cJSON *alert = cJSON_Parse("{\"id\":\"retained-alert\",\"message\":\"Bedroom warm\",\"ruleId\":\"rule-1\",\"severity\":\"warning\",\"read\":false,\"uptimeMs\":1000}");
+    cJSON_AddItemToArray(alerts, alert);
+    strcpy(engine.rules[0].id, cJSON_GetObjectItemCaseSensitive(cJSON_GetArrayItem(rules, 0), "id")->valuestring);
+    engine.rules[0].active = true;
+    cJSON *original = automation_engine_saved_state(&engine, rules, alerts, NULL, false);
+    TEST_ASSERT_NOT_NULL(original);
+    char error[96];
+    cJSON *before = cJSON_Duplicate(original, true);
+    cJSON *recovered = automation_prepare_recovery(original, error, sizeof(error));
+    TEST_ASSERT_NOT_NULL(recovered);
+    TEST_ASSERT_TRUE(automation_validate_saved_state(recovered, error, sizeof(error)));
+    TEST_ASSERT_TRUE(cJSON_IsFalse(cJSON_GetObjectItemCaseSensitive(cJSON_GetArrayItem(cJSON_GetObjectItemCaseSensitive(recovered, "rules"), 0), "enabled")));
+    TEST_ASSERT_EQUAL(0, cJSON_GetArraySize(cJSON_GetObjectItemCaseSensitive(recovered, "activeRuleIds")));
+    TEST_ASSERT_TRUE(cJSON_Compare(before, original, true));
+    TEST_ASSERT_TRUE(cJSON_Compare(alerts, cJSON_GetObjectItemCaseSensitive(recovered, "notifications"), true));
+    cJSON_Delete(recovered);
+    cJSON_Hooks hooks = {failing_json_allocation, tracked_json_free};
+    fail_allocation = 0; allocation_number = 0; outstanding_allocations = 0;
+    cJSON_InitHooks(&hooks);
+    recovered = automation_prepare_recovery(original, error, sizeof(error));
+    size_t allocations = allocation_number;
+    cJSON_Delete(recovered);
+    cJSON_InitHooks(NULL);
+    TEST_ASSERT_EQUAL(0, outstanding_allocations);
+    for (size_t i = 1; i <= allocations; i++) {
+        fail_allocation = i; allocation_number = 0; outstanding_allocations = 0;
+        cJSON_InitHooks(&hooks);
+        recovered = automation_prepare_recovery(original, error, sizeof(error));
+        cJSON_InitHooks(NULL);
+        TEST_ASSERT_NULL(recovered);
+        TEST_ASSERT_EQUAL(0, outstanding_allocations);
+        TEST_ASSERT_TRUE(cJSON_Compare(before, original, true));
+    }
+    cJSON_ReplaceItemInObjectCaseSensitive(original, "version", cJSON_CreateNumber(1));
+    cJSON_DeleteItemFromObjectCaseSensitive(original, "activeRuleIds");
+    recovered = automation_prepare_recovery(original, error, sizeof(error));
+    TEST_ASSERT_NOT_NULL(recovered);
+    TEST_ASSERT_EQUAL(2, cJSON_GetObjectItemCaseSensitive(recovered, "version")->valueint);
+    cJSON_Delete(recovered);
+    cJSON_ReplaceItemInObjectCaseSensitive(original, "version", cJSON_CreateNumber(9));
+    TEST_ASSERT_NULL(automation_prepare_recovery(original, error, sizeof(error)));
+    cJSON_Delete(original); cJSON_Delete(before); cJSON_Delete(rules); cJSON_Delete(alerts);
+}
 static void test_saved_blob_rejects_hidden_suffix_and_invalid_boundaries(void) {
     const char valid[] = "{\"version\":2,\"rules\":[],\"notifications\":[],\"activeRuleIds\":[]} \n";
     char error[96];
@@ -708,6 +754,7 @@ void app_main(void)
 #endif
 {
     UNITY_BEGIN();
+    RUN_TEST(test_recovery_preparation_disables_rules_without_changing_original);
     RUN_TEST(test_saved_blob_rejects_hidden_suffix_and_invalid_boundaries);
     RUN_TEST(test_saved_state_allocation_failures_never_return_partial_record);
     RUN_TEST(test_saved_activation_versions_and_references);

@@ -31,6 +31,8 @@ bool automation_validate_saved_state(const cJSON *state, char *error,
                                      size_t error_len);
 /* Parse the complete NVS blob, including exactly one final null terminator. */
 cJSON *automation_parse_saved_blob(const char *bytes, size_t size, char *error, size_t error_len);
+/* Validated recovery copy: all rules disabled, alerts retained, no activation. */
+cJSON *automation_prepare_recovery(const cJSON *state, char *error, size_t error_len);
 void automation_engine_reset(automation_engine_t *engine);
 void automation_engine_reset_rule(automation_engine_t *engine, const char *id);
 // Sources are a flat object keyed by stable source ID. Missing/null values
