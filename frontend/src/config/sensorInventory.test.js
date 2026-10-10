@@ -30,6 +30,21 @@ test('setup rejects controller-incompatible timing, calibration and capacity val
   assert.ok(validateProfile(profile).some(error => error.includes('HVAC control mode')))
 })
 
+test('setup measures text limits in UTF-8 bytes to match controller storage', () => {
+  const profile = structuredClone(demoProfile)
+  profile.rvProfile.name = 'é'.repeat(24)
+  profile.batteries[0].label = 'é'.repeat(24)
+  profile.batteries[0].id = 'é'.repeat(16)
+  assert.deepEqual(validateProfile(profile), [])
+  profile.rvProfile.name += 'é'
+  profile.batteries[0].label += 'é'
+  profile.batteries[0].id += 'é'
+  const errors = validateProfile(profile)
+  assert.ok(errors.some(error => error.startsWith('RV name')))
+  assert.ok(errors.some(error => error.includes('labels must')))
+  assert.ok(errors.some(error => error.includes('oversized item identity')))
+})
+
 test('two zones share one bus but keep stable, separate sensor identities', () => {
   assert.deepEqual(validateProfile(demoProfile), [])
   const readings = demoReadings(1000).reverse()

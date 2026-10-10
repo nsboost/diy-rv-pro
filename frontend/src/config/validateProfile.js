@@ -3,6 +3,7 @@ import { optionSets } from './systemProfile.js'
 
 export const sectionLimits = { temperatureBuses: 4, hvacZones: 8, temperatureZones: 32, solarChargeControllers: 8, inverters: 6, batteries: 8, generators: 2, acBreakers: 48, dcCircuits: 64, waterTanks: 12, waterHeaters: 4, waterPumps: 8, propaneSystems: 4, weatherStations: 2, cameras: 8, securityZones: 16, securitySensors: 64, customIo: 64 }
 const powerRanges = { maxCurrentA: [0, 500], capacityAh: [0, 2000] }
+const utf8Length = value => new TextEncoder().encode(value).length
 const numericRanges = {
   hvacZones: { stageCount: [0, 4] },
   generators: { maxCrankSeconds: [1, 30], warmupSeconds: [0, 600], cooldownSeconds: [0, 600] },
@@ -32,16 +33,16 @@ export function validateProfile(profile) {
   const ids = new Set()
   const relays = new Map()
   if (profile.schemaVersion !== 1) errors.push('Unsupported configuration version')
-  if (!profile.rvProfile?.name?.trim() || profile.rvProfile.name.length > 48) errors.push('RV name must contain 1–48 characters')
+  if (!profile.rvProfile?.name?.trim() || utf8Length(profile.rvProfile.name) > 48) errors.push('RV name must contain text using at most 48 UTF-8 bytes')
   for (const [section, limit] of Object.entries(sectionLimits)) {
     const items = profile[section]
     if (!Array.isArray(items)) { errors.push(`${section}: expected an inventory list`); continue }
     if (items.length > limit) errors.push(`${section}: maximum ${limit} items`)
     for (const item of items) {
       if (!item || typeof item !== 'object') { errors.push(`${section}: invalid item`); continue }
-      if (typeof item.id !== 'string' || !item.id || item.id.length > 32 || ids.has(item.id)) errors.push(`${section}: missing or duplicate item identity`)
+      if (typeof item.id !== 'string' || !item.id || utf8Length(item.id) > 32 || ids.has(item.id)) errors.push(`${section}: missing, duplicate or oversized item identity (maximum 32 UTF-8 bytes)`)
       ids.add(item.id)
-      if (!item.label?.trim() || item.label.length > 48) errors.push(`${section}: labels must contain 1–48 characters`)
+      if (!item.label?.trim() || utf8Length(item.label) > 48) errors.push(`${section}: labels must contain text using at most 48 UTF-8 bytes`)
       for (const [key, [min, max]] of Object.entries(numericRanges[section] || {})) {
         if (item[key] !== undefined && (!Number.isInteger(item[key]) || item[key] < min || item[key] > max)) errors.push(`${item.label}: ${key} must be an integer from ${min} to ${max}`)
       }

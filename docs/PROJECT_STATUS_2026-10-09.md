@@ -89,7 +89,7 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
   runtime. Temperature-based alerts run in a background task. Physical equipment
   drivers, other source values, time synchronization and hardware bench checks
   remain incomplete; equipment prototype simulation is labeled explicitly.
-- The frontend suite currently contains 39 passing tests, including malformed
+- The frontend suite currently contains 40 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
   contain 18 passing tests including rule identity retention, disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
@@ -186,3 +186,5 @@ Stored notification recovery now validates the version, bounded field types,
 unique alert identities and nonnegative timestamps before publishing the state.
 It preserves initialized arrays if allocation fails and requires a complete,
 terminated JSON payload. Corrupt or unsupported stored states are rejected.
+
+Configuration text limits now use UTF-8 byte lengths, matching firmware storage: RV names and equipment labels allow 48 bytes; inventory identities allow 32 bytes. Boundary tests cover accented text that previously passed setup but exceeded controller limits. All 40 frontend tests and the production build pass. Physical equipment drivers and commissioning remain pending.
