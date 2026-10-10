@@ -1,3 +1,4 @@
+import { sampledAtFromRequest } from './api/sensorFreshness.js'
 import { parseHvacSettingsDraft } from './config/hvacSettingsDraft.js'
 import { requestControllerJson } from './api/controllerRequest.js'
 import ControllerSettings from './components/ControllerSettings.jsx'
@@ -971,15 +972,17 @@ export default function App() {
         if (token) {
           const config = await fetchConfig(token)
           if (!cancelled) setSystemProfile(config.features)
+          const discoveryStartedAt = Date.now()
           const discovery = await requestControllerJson('/api/temperature/devices', {headers: {Authorization: `Bearer ${token}`}}).catch(() => null)
           if (discovery) {
             const devices = discovery.devices
-            snapshot.temperatures = devices.flatMap(device => config.features.temperatureZones.filter(sensor => sensor.busId === device.busId && sensor.address?.toLowerCase() === device.address?.toLowerCase()).map(sensor => ({...device, id: sensor.id, sampledAt: Date.now() - device.ageMs})))
+            snapshot.temperatures = devices.flatMap(device => config.features.temperatureZones.filter(sensor => sensor.busId === device.busId && sensor.address?.toLowerCase() === device.address?.toLowerCase()).map(sensor => ({...device, id: sensor.id, sampledAt: sampledAtFromRequest(discoveryStartedAt, device.ageMs)})))
           }
         }
         if (token) {
+          const contactsStartedAt = Date.now()
           const contacts = await requestControllerJson('/api/security/inputs', {headers:{Authorization:`Bearer ${token}`}}).catch(() => null)
-          snapshot.securityInputs = Array.isArray(contacts?.sensors) ? contacts.sensors.map(sensor => ({...sensor,sampledAt:Date.now()})) : []
+          snapshot.securityInputs = Array.isArray(contacts?.sensors) ? contacts.sensors.map(sensor => ({...sensor,sampledAt:sampledAtFromRequest(contactsStartedAt)})) : []
         }
         if (!cancelled) {
           setTelemetry({ ...snapshot, controller: { ...snapshot.controller, mode: 'device', online: true } })
