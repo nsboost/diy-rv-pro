@@ -6,6 +6,19 @@ import { validTemperatureAddress, resolveTemperature } from './sensorInventory.j
 import { projectTelemetry } from '../api/profileTelemetry.js'
 import { cloneTelemetry } from '../data/mockTelemetry.js'
 
+test('malformed imported inventories return validation errors without crashing setup', () => {
+  assert.ok(validateProfile(null).length)
+  assert.ok(validateProfile([]).length)
+  for (const value of [null, [], 'invalid', { label: 42, enabled: true }, { label: 'Sensor', enabled: 'false' }, { label: 'Sensor', enabled: true, address: 28 }]) {
+    const profile = structuredClone(demoProfile)
+    profile.temperatureZones.push(value)
+    assert.ok(validateProfile(profile).length)
+  }
+  const profile = structuredClone(demoProfile)
+  profile.temperatureBuses = { gpio: 4 }
+  assert.ok(validateProfile(profile).some(error => error.includes('inventory list')))
+})
+
 test('two zones share one bus but keep stable, separate sensor identities', () => {
   assert.deepEqual(validateProfile(demoProfile), [])
   const readings = demoReadings(1000).reverse()

@@ -4,6 +4,19 @@ import { optionSets } from './systemProfile.js'
 export const sectionLimits = { temperatureBuses: 4, hvacZones: 8, temperatureZones: 32, solarChargeControllers: 8, inverters: 6, batteries: 8, generators: 2, acBreakers: 48, dcCircuits: 64, waterTanks: 12, waterHeaters: 4, waterPumps: 8, propaneSystems: 4, weatherStations: 2, cameras: 8, securityZones: 16, securitySensors: 64, customIo: 64 }
 
 export function validateProfile(profile) {
+  if (!profile || typeof profile !== 'object' || Array.isArray(profile)) return ['Configuration must be an object']
+  const structureErrors = []
+  if (typeof profile.rvProfile?.name !== 'string') structureErrors.push('RV name must be text')
+  for (const section of Object.keys(sectionLimits)) {
+    if (!Array.isArray(profile[section])) { structureErrors.push(`${section}: expected an inventory list`); continue }
+    for (const item of profile[section]) {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) { structureErrors.push(`${section}: invalid item`); continue }
+      if (typeof item.label !== 'string') structureErrors.push(`${section}: labels must be text`)
+      if (typeof item.enabled !== 'boolean') structureErrors.push(`${section}: enabled must be true or false`)
+      if (section === 'temperatureZones' && item.address !== undefined && typeof item.address !== 'string') structureErrors.push(`${section}: sensor address must be text`)
+    }
+  }
+  if (structureErrors.length) return [...new Set(structureErrors)]
   const errors = validateSensorInventory(profile)
   const ids = new Set()
   const relays = new Map()
