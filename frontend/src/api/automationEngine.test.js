@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { evaluateRules, durationMs, compareCondition } from './automationEngine.js'
+import { evaluateRules, durationMs, compareCondition, validateCondition } from './automationEngine.js'
 import { createLocalController } from './telemetryClient.js'
 import { demoProfile, demoReadings } from '../data/demoProfile.js'
 import { cloneTelemetry } from '../data/mockTelemetry.js'
@@ -9,6 +9,15 @@ const alertRule = { id: 'bedroom-alert', name: 'Bedroom too warm', enabled: true
   trigger: { source: 'temperature.demo-temp-2.tempF', operator: '>', value: '75', holdFor: '5 sec' },
   action: { type: 'alert', target: 'notification', command: 'sendAlert', value: 'Bedroom hot' },
   reverse: { enabled: true, source: 'temperature.demo-temp-2.tempF', operator: '<', value: '72', target: 'notification', command: 'sendAlert', restoreValue: 'Bedroom recovered' } }
+
+test('clock comparisons use HH:MM consistently and reject invalid times', () => {
+  for (const [operator, minute, expected] of [['=', 390, true], ['!=', 391, true], ['>', 391, true], ['<', 389, true], ['>=', 390, true], ['<=', 390, true]]) {
+    const condition = { source: 'time.local', operator, value: '06:30' }
+    validateCondition(condition)
+    assert.equal(compareCondition(condition, minute), expected)
+  }
+  assert.throws(() => validateCondition({ source: 'time.local', operator: '=', value: '25:00' }), /HH:MM/)
+})
 
 test('addressed sensor triggers after continuous hold, once, and restores once', () => {
   const state = {}

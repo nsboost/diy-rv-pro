@@ -89,7 +89,8 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
   runtime. Temperature-based alerts run in a background task. Physical equipment
   drivers, other source values, time synchronization and hardware bench checks
   remain incomplete; equipment prototype simulation is labeled explicitly.
-- The frontend suite currently contains 26 passing tests. Firmware host tests
+- The frontend suite currently contains 29 passing tests, including HH:MM clock
+  comparisons and independent in-app/browser notification preferences. Firmware host tests
   contain 12 passing tests including hold resets, recovery and failed-execution
   retries. ESP32-S3 integration build passes: 76,416 bytes static RAM and 956,925 bytes application flash. Runtime headroom and hardware operation still need bench verification.
 

@@ -34,6 +34,8 @@ export function validateCondition(condition) {
       const range = String(condition.value).split(',').map(value => Number(value.trim()))
       if (range.length !== 2 || !range.every(Number.isFinite) || range[0] >= range[1]) throw new Error('Range must use two increasing numbers, such as 65,75')
     }
+  } else if (condition.source === 'time.local') {
+    timeMinute(condition.value)
   } else if (['>', '>=', '<', '<='].includes(condition.operator) && !Number.isFinite(Number(condition.value))) {
     throw new Error('Numeric comparisons require a number')
   }
@@ -53,7 +55,7 @@ export function compareCondition(condition, value, previous) {
     }
     return condition.operator === 'between' ? within : !within
   }
-  const expected = scalar(condition.value)
+  const expected = condition.source === 'time.local' ? timeMinute(condition.value) : scalar(condition.value)
   if (condition.operator === '=') return value === expected
   if (condition.operator === '!=') return value !== expected
   if (typeof value !== 'number' || typeof expected !== 'number') return false
