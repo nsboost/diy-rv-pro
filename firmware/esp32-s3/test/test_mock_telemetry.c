@@ -522,6 +522,18 @@ static void test_security_sources_reject_stale_and_disabled_contacts(void) {
     TEST_ASSERT_TRUE(cJSON_IsFalse(cJSON_GetObjectItemCaseSensitive(sources, "security.door.active")));
     TEST_ASSERT_NULL(cJSON_GetObjectItemCaseSensitive(sources, "security.disabled.active"));
     cJSON_Delete(sources);
+    cJSON *items = cJSON_GetObjectItemCaseSensitive(readings, "sensors");
+    cJSON_AddItemToArray(items, cJSON_Parse("{\"id\":\"door\",\"status\":\"ok\",\"active\":true}"));
+    sources = cJSON_CreateObject();
+    automation_security_sources(sources, profile, readings);
+    TEST_ASSERT_TRUE(cJSON_IsNull(cJSON_GetObjectItemCaseSensitive(sources,"security.door.active")));
+    cJSON_Delete(sources);
+    cJSON_ReplaceItemInObjectCaseSensitive(cJSON_GetArrayItem(items,1),"status",cJSON_CreateString("stale"));
+    sources = cJSON_CreateObject();
+    automation_security_sources(sources, profile, readings);
+    TEST_ASSERT_TRUE(cJSON_IsNull(cJSON_GetObjectItemCaseSensitive(sources,"security.door.active")));
+    cJSON_Delete(sources);
+    cJSON_DeleteItemFromArray(items, 1);
     cJSON_ReplaceItemInObjectCaseSensitive(cJSON_GetArrayItem(cJSON_GetObjectItemCaseSensitive(readings,"sensors"),0),"status",cJSON_CreateString("stale"));
     sources = cJSON_CreateObject();
     automation_security_sources(sources, profile, readings);

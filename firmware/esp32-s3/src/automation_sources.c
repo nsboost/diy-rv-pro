@@ -83,13 +83,14 @@ void automation_security_sources(cJSON *sources, const cJSON *profile,
     char key[128];
     snprintf(key, sizeof(key), "security.%s.active", text(sensor, "id"));
     const cJSON *reading, *value = NULL;
+    unsigned matches = 0;
     cJSON_ArrayForEach(reading, cJSON_GetObjectItemCaseSensitive(readings, "sensors")) {
-      if (!strcmp(text(sensor, "id"), text(reading, "id")) && !strcmp(text(reading, "status"), "ok")) {
-        value = cJSON_GetObjectItemCaseSensitive(reading, "active");
-        break;
+      if (!strcmp(text(sensor, "id"), text(reading, "id"))) {
+        matches++;
+        value = !strcmp(text(reading, "status"), "ok") ? cJSON_GetObjectItemCaseSensitive(reading, "active") : NULL;
       }
     }
-    if (cJSON_IsBool(value)) cJSON_AddBoolToObject(sources, key, cJSON_IsTrue(value));
+    if (matches == 1 && cJSON_IsBool(value)) cJSON_AddBoolToObject(sources, key, cJSON_IsTrue(value));
     else cJSON_AddNullToObject(sources, key);
   }
 }

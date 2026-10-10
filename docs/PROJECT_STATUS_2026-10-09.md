@@ -368,3 +368,8 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 - Firmware now requires exactly one discovered reading matching the configured bus and ROM address, consistent with frontend mapping. Duplicate matches supply null to the named sensor and HVAC alias rather than selecting the first reading. Other uniquely mapped zones retain their readings.
 - 24 firmware host tests passed with duplicate-discovery coverage for both named sensor and HVAC alias. Physical bus discovery remains bench-unverified.
 - ESP32-S3 build passed: static RAM 77,872 bytes; flash 994,573 bytes. No hardware flashed.
+
+### Reject ambiguous firmware contact readings (October 10)
+- Contact automation sources require exactly one reading for the configured sensor identity. Conflicting duplicates, including a valid/stale pair, supply null instead of picking the first healthy-looking record. Unique healthy boolean false remains a valid inactive state.
+- 24 firmware host tests passed with duplicate healthy and mixed stale/healthy contact coverage. Physical contact input behavior remains bench-unverified.
+- ESP32-S3 build passed: static RAM 77,872 bytes; flash 994,601 bytes. No hardware flashed. Live GitHub run 38047754154 for prior commit 7acd09c was still in progress at inspection.
