@@ -153,10 +153,12 @@ void automation_runtime_configure(const diy_config_t *config) {
   if (!next)
     return;
   xSemaphoreTake(lock, portMAX_DELAY);
+  bool reset = configured != config->setup_complete ||
+      automation_input_configuration_changed(profile, next);
   cJSON_Delete(profile);
   profile = next;
   configured = config->setup_complete;
-  automation_engine_reset(&engine);
+  if (reset) automation_engine_reset(&engine);
   xSemaphoreGive(lock);
 }
 esp_err_t automation_runtime_start(const diy_config_t *config) {

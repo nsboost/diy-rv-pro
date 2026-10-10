@@ -353,3 +353,8 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 ### Independent credential-store reads (October 10)
 - Browser credential lookup now reads session and remembered storage independently. Inaccessible session storage no longer hides an available remembered token, and session credentials retain priority. No readable token returns unauthenticated state.
 - Validation: 91 frontend tests and production build passed, including getter/read failures, session precedence, and absent credentials. No new credential was entered or saved during verification.
+
+### Preserve activation during unrelated inventory edits (October 10)
+- Runtime configuration compares temperature buses, addressed temperature sensors, HVAC zones and security sensors before resetting the automation engine. Unrelated RV/equipment edits preserve current activation and hold state; startup, input mapping changes and setup-status changes still reset it.
+- 24 firmware host tests passed, including unchanged-input and changed-contact profile comparisons. This does not implement activation persistence across reboots. Configuration saves still mark temperature acquisition pending restart; reducing that restart scope remains outstanding.
+- ESP32-S3 build passed: static RAM 77,872 bytes; flash 994,349 bytes. Hardware behavior not exercised.

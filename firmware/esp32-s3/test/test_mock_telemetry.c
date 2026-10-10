@@ -8,6 +8,18 @@
 #include "mock_telemetry.h"
 #include "unity.h"
 
+void test_unrelated_profile_edits_preserve_automation_inputs(void) {
+  cJSON *before = cJSON_Parse("{\"rvProfile\":{\"name\":\"Before\"},\"temperatureBuses\":[],\"temperatureZones\":[],\"hvacZones\":[],\"securitySensors\":[]}");
+  cJSON *after = cJSON_Duplicate(before, true);
+  cJSON_ReplaceItemInObjectCaseSensitive(cJSON_GetObjectItemCaseSensitive(after, "rvProfile"), "name", cJSON_CreateString("After"));
+  TEST_ASSERT_FALSE(automation_input_configuration_changed(before, after));
+  cJSON_AddItemToArray(cJSON_GetObjectItemCaseSensitive(after, "securitySensors"), cJSON_Parse("{\"id\":\"door\",\"gpio\":4}"));
+  TEST_ASSERT_TRUE(automation_input_configuration_changed(before, after));
+  TEST_ASSERT_TRUE(automation_input_configuration_changed(NULL, after));
+  cJSON_Delete(before);
+  cJSON_Delete(after);
+}
+
 void setUp(void)
 {
 }
@@ -533,6 +545,7 @@ void app_main(void)
 #endif
 {
     UNITY_BEGIN();
+    RUN_TEST(test_unrelated_profile_edits_preserve_automation_inputs);
     RUN_TEST(test_contact_rule_comparisons_require_boolean_semantics);
     RUN_TEST(test_security_sources_reject_stale_and_disabled_contacts);
     RUN_TEST(test_automation_hold_fault_reset_restore_and_retry);

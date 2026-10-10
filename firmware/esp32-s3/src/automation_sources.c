@@ -91,3 +91,16 @@ void automation_security_sources(cJSON *sources, const cJSON *profile,
     else cJSON_AddNullToObject(sources, key);
   }
 }
+
+bool automation_input_configuration_changed(const cJSON *previous, const cJSON *next) {
+  if (!cJSON_IsObject(previous) || !cJSON_IsObject(next))
+    return true;
+  const char *sections[] = {"temperatureBuses", "temperatureZones", "hvacZones", "securitySensors"};
+  for (size_t i = 0; i < sizeof(sections) / sizeof(sections[0]); ++i) {
+    const cJSON *before = cJSON_GetObjectItemCaseSensitive(previous, sections[i]);
+    const cJSON *after = cJSON_GetObjectItemCaseSensitive(next, sections[i]);
+    if (!before && !after) continue;
+    if (!cJSON_Compare(before, after, true)) return true;
+  }
+  return false;
+}
