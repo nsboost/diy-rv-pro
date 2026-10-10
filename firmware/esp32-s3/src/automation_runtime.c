@@ -20,12 +20,15 @@ static automation_engine_t engine;
 static cJSON *rules, *alerts, *profile;
 static bool configured;
 static bool inputs_pending;
+static bool storage_fault;
 static unsigned sequence;
 static const char *text(const cJSON *obj, const char *key) {
   const cJSON *v = cJSON_GetObjectItemCaseSensitive(obj, key);
   return cJSON_IsString(v) ? v->valuestring : "";
 }
 static esp_err_t save_state(const cJSON *next_rules, const cJSON *next_alerts) {
+  if (storage_fault)
+    return ESP_ERR_INVALID_STATE;
   cJSON *root = cJSON_CreateObject();
   cJSON *rules_copy = cJSON_Duplicate(next_rules, true);
   cJSON *alerts_copy = cJSON_Duplicate(next_alerts, true);
@@ -130,7 +133,7 @@ static void task(void *context) {
   (void)context;
   for (;;) {
     xSemaphoreTake(lock, portMAX_DELAY);
-    if (configured) {
+    if (configured && !storage_fault) {
       cJSON *sources = source_values();
       automation_engine_tick(&engine, rules, sources,
                              esp_timer_get_time() / 1000, execute, NULL);
@@ -165,9 +168,16 @@ esp_err_t automation_runtime_start(const diy_config_t *config) {
   if (!rules || !alerts)
     return ESP_ERR_NO_MEM;
   nvs_handle_t handle;
-  if (nvs_open("rv_automation", NVS_READONLY, &handle) == ESP_OK) {
+  storage_fault = true;
+  esp_err_t opened = nvs_open("rv_automation", NVS_READONLY, &handle);
+  if (opened == ESP_ERR_NVS_NOT_FOUND)
+    storage_fault = false;
+  if (opened == ESP_OK) {
     size_t size = 0;
-    if (nvs_get_blob(handle, "state", NULL, &size) == ESP_OK && size > 0 &&
+    esp_err_t loaded = nvs_get_blob(handle, "state", NULL, &size);
+    if (loaded == ESP_ERR_NVS_NOT_FOUND)
+      storage_fault = false;
+    if (loaded == ESP_OK && size > 0 &&
         size <= 65537) {
       char *payload = malloc(size);
       if (payload && nvs_get_blob(handle, "state", payload, &size) == ESP_OK &&
@@ -185,6 +195,7 @@ esp_err_t automation_runtime_start(const diy_config_t *config) {
             cJSON_Delete(alerts);
             rules = loaded_rules;
             alerts = loaded_alerts;
+            storage_fault = false;
           } else {
             cJSON_Delete(loaded_rules);
             cJSON_Delete(loaded_alerts);
@@ -193,7 +204,7 @@ esp_err_t automation_runtime_start(const diy_config_t *config) {
           }
         } else
           ESP_LOGW("automation",
-                   "Stored automation state is invalid; using empty inventory");
+                   "Stored automation state is invalid; original retained and automation disabled");
         cJSON_Delete(saved);
       }
       free(payload);
@@ -210,6 +221,12 @@ bool automation_runtime_control(const cJSON *command, char *error,
   bool success = false;
   const char *type = text(command, "type"), *id = text(command, "id");
   xSemaphoreTake(lock, portMAX_DELAY);
+  if (storage_fault) {
+    if (error && error_len)
+      snprintf(error, error_len, "Saved automation data could not be loaded; original retained. Storage recovery is required before editing rules.");
+    xSemaphoreGive(lock);
+    return false;
+  }
   cJSON *next_rules = cJSON_Duplicate(rules, true),
         *next_alerts = cJSON_Duplicate(alerts, true);
   if (!next_rules || !next_alerts)
@@ -296,6 +313,9 @@ finish:
 }
 void automation_runtime_append(cJSON *telemetry) {
   xSemaphoreTake(lock, portMAX_DELAY);
+  if (storage_fault)
+    cJSON_AddStringToObject(telemetry, "storageError",
+      "Saved automation data could not be loaded. Original retained; automation and rule edits are disabled pending storage recovery.");
   cJSON *runtime = cJSON_CreateObject();
   for (size_t i = 0; i < DIY_AUTOMATION_MAX_RULES; ++i) {
     const automation_rule_state_t *state = &engine.rules[i];

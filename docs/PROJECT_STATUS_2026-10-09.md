@@ -331,3 +331,9 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 ### Re-importable configuration exports (October 10)
 - Exports now use compact JSON and pass the same raw validation and byte limit as imports before download. Invalid or oversized drafts produce visible errors. Download URLs remain available briefly instead of being immediately revoked; feedback clarifies that exports include current unsaved edits.
 - Validation: 85 frontend tests and production build passed. Browser downloaded the populated Demo RV export; the actual downloaded file passed import validation with two HVAC zones and two addressed sensors.
+
+### Preserve unreadable firmware automation storage (October 10)
+- Firmware distinguishes a new/absent automation store from an unreadable, malformed, oversized, unsupported, or unrestorable saved state. The latter is retained in NVS; automation execution and rule edits are disabled instead of overwriting it with an empty inventory.
+- Telemetry reports an explicit storage error, and editing endpoints return recovery guidance. No automatic erase or recovery reset is provided; retain the device storage for diagnosis before repairing it.
+- The portable firmware suite passed 23 tests. These cover state validation and evaluator logic, not the NVS fault path. Physical storage fault injection and reboot activation persistence remain required.
+- ESP32-S3 build passed: static RAM 77,872 bytes; flash 994,129 bytes. No hardware flashed.
