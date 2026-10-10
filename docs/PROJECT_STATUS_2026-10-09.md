@@ -415,3 +415,7 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 ### Fresh controller requests (October 10)
 - Controller JSON requests explicitly use browser cache mode no-store, including polling and post-command confirmation. Caller cache options cannot override this state-read policy; authentication headers and timeout cancellation remain intact. Firmware already marks JSON responses no-store.
 - All 94 frontend tests and the production build passed. Regression verifies request options and authentication preservation; physical controller cache/fault behavior remains unverified.
+
+### Telemetry structure validation (October 10)
+- Device reads validate required dashboard objects and render collections before updating UI state. Null records, malformed lists, invalid optional runtime/storage feedback and malformed supplied status tuples are rejected with a compatibility/reconnect error. Legitimate null numeric readings are preserved; systemStatus remains optional because inventory projection constructs it and firmware does not emit it.
+- All 96 frontend tests and production build passed. This is structural boundary coverage, not validation of every scalar field or live malformed-controller browser behavior.

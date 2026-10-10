@@ -1,3 +1,4 @@
+import { validateTelemetry } from './validateTelemetry.js'
 import { readAdminToken } from './authStorage.js'
 import { requestControllerJson } from './controllerRequest.js'
 import { cloneTelemetry, defaultConfig } from '../data/mockTelemetry.js'
@@ -558,7 +559,7 @@ export function getAdminToken() {
 export async function fetchTelemetry(token = getAdminToken()) {
   const headers = { Accept: 'application/json' }
   if (token) headers.Authorization = `Bearer ${token}`
-  return requestControllerJson(TELEMETRY_ENDPOINT, { headers })
+  return validateTelemetry(await requestControllerJson(TELEMETRY_ENDPOINT, { headers }))
 }
 
 export async function fetchConfig(token) {
