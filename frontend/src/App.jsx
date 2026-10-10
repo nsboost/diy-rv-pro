@@ -817,7 +817,8 @@ function EventsPanel({ events }) {
   )
 }
 
-function AutomationPanel({ rules, runtime, onDispatch, onEdit, onCreate }) {
+function AutomationPanel({ rules, runtime, profile, onDispatch, onEdit, onCreate }) {
+  const catalog = {sources: sourceCatalog(profile), systems: controlSystems(profile)}
   return (
     <section className="panel automation-panel" id="section-automation">
       <div className="panel-heading compact-heading">
@@ -830,7 +831,7 @@ function AutomationPanel({ rules, runtime, onDispatch, onEdit, onCreate }) {
           <button className="automation-copy" onClick={() => onEdit(rule)} type="button">
             <strong>{rule.name}</strong>
             <span>{rule.detail}</span>
-            <small>{ruleStatus(rule, runtime?.[rule.id])}</small>
+            <small>{ruleStatus(rule, runtime?.[rule.id], catalog)}</small>
             <small>{rule.action?.commandLabel || rule.action?.command || 'Control'} {'->'} {rule.action?.targetLabel || rule.action?.target || 'Controller'}</small>
           </button>
           <button
@@ -1115,6 +1116,7 @@ export default function App() {
         <AutomationPanel
           rules={telemetry.automationRules}
           runtime={telemetry.ruleRuntime}
+          profile={systemProfile}
           onDispatch={action => { dispatch(action).catch(() => {}) }}
           onEdit={setEditingAutomationRule}
           onCreate={() => setCreatingAutomation(true)}
@@ -1228,6 +1230,7 @@ export default function App() {
             <AutomationPanel
               rules={telemetry.automationRules}
               runtime={telemetry.ruleRuntime}
+              profile={systemProfile}
               onDispatch={action => { dispatch(action).catch(() => {}) }}
               onEdit={setEditingAutomationRule}
               onCreate={() => setCreatingAutomation(true)}
