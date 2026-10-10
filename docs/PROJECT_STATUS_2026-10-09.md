@@ -89,7 +89,7 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
   runtime. Temperature-based alerts run in a background task. Physical equipment
   drivers, other source values, time synchronization and hardware bench checks
   remain incomplete; equipment prototype simulation is labeled explicitly.
-- The frontend suite currently contains 52 passing tests, including malformed
+- The frontend suite currently contains 53 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
   contain 20 passing tests including assigned pump outputs, boolean flag validation, rule identity retention, disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
@@ -216,3 +216,5 @@ Demo time-zone configuration now survives reload rather than resetting to Denver
 Automation save and reload now reject nonboolean enable/restore flags, ambiguous rule identities and text exceeding firmware UTF-8 bounds. Alert commands must use the notification target. Firmware enforces the same safe identity alphabet and rejects reserved object keys. Generated fallback rule IDs use random UUIDs rather than timestamp collisions. All 51 frontend tests, 20 firmware tests and both builds pass.
 
 Manual HVAC mode changes and Auto now check configured output interlocks rather than bypassing block rules through mode commands. Off clears simulated cooling, heating, fan and Auto states; setMode synchronizes the Auto flag. Integration tests start from Off, confirm blocked Cool/Auto commands reject, disable the block, start cooling and confirm Off clears it. All 52 frontend tests and the production build pass. This is demo logic; physical thermostat/equipment state machines still require implementation and commissioning.
+
+Setup now checks enabled power-device communications/sensor inputs, tank sensor types, camera URLs and security input strategies before device submission. Missing generator and controllable-circuit relay fields cannot bypass required assignments through undefined comparisons. Disabled inventory may retain incomplete assignments. An import regression test covers omitted relay fields and missing input strategies, then confirms disabling those items permits retention. All 53 frontend tests and the production build pass. Selecting a protocol still does not establish an implemented physical driver.

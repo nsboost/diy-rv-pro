@@ -7,6 +7,8 @@ const utf8Length = value => new TextEncoder().encode(value).length
 // Keep optional inventory text fields aligned with feature_config.c storage bounds.
 const textLimits = { type:32, controlMode:32, temperatureSensorId:32, busId:32, address:16, sensorType:32, communication:32, inputType:32, contactPolarity:32, zoneId:32, role:32, protocol:32, gatewayName:48, streamUrl:256, snapshotUrl:256 }
 const booleanFields = ['monitored', 'controllable', 'hasAcElement', 'hasDcElement', 'hasPropane', 'tankless', 'recircPump', 'requiresAuth', 'recordMotion', 'armHome', 'armAway', 'lowBattery']
+const assigned = value => Number.isInteger(value) && value >= 0
+const configuredText = value => typeof value === 'string' && value.trim() !== '' && value !== 'disabled'
 const numericRanges = {
   hvacZones: { stageCount: [0, 4] },
   generators: { maxCrankSeconds: [1, 30], warmupSeconds: [0, 600], cooldownSeconds: [0, 600] },
@@ -70,11 +72,15 @@ export function validateProfile(profile) {
       if (!item.enabled) continue
       if (section === 'generators') {
         if (!optionSets.generatorControl.includes(item.controlStrategy)) errors.push(`${item.label}: unsupported generator strategy`)
-        if (['two-wire', 'three-wire', 'momentary-start-stop', 'dry-contact'].includes(item.controlStrategy) && item.startRelay < 0) errors.push(`${item.label}: assign a start relay`)
-        if (['three-wire', 'momentary-start-stop'].includes(item.controlStrategy) && item.stopRelay < 0) errors.push(`${item.label}: assign a stop relay`)
+        if (['two-wire', 'three-wire', 'momentary-start-stop', 'dry-contact'].includes(item.controlStrategy) && !assigned(item.startRelay)) errors.push(`${item.label}: assign a start relay`)
+        if (['three-wire', 'momentary-start-stop'].includes(item.controlStrategy) && !assigned(item.stopRelay)) errors.push(`${item.label}: assign a stop relay`)
       }
       if (section === 'hvacZones' && item.controlMode === 'controller' && !['coolRelay', 'furnaceRelay', 'heatPumpRelay', 'fanRelay'].some(key => item[key] >= 0)) errors.push(`${item.label}: assign an equipment relay`)
-      if (['acBreakers', 'dcCircuits'].includes(section) && item.controllable && item.relay < 0) errors.push(`${item.label}: controllable circuits require a relay`)
+      if (['acBreakers', 'dcCircuits'].includes(section) && item.controllable && !assigned(item.relay)) errors.push(`${item.label}: controllable circuits require a relay`)
+      if (['batteries','inverters','solarChargeControllers'].includes(section) && !configuredText(item.communication) && !configuredText(item.sensorType) && !assigned(item.senseGpio) && !assigned(item.adcChannel)) errors.push(`${item.label}: select communications or assign a sensor input`)
+      if (section === 'waterTanks' && !configuredText(item.sensorType)) errors.push(`${item.label}: select a tank sensor type`)
+      if (section === 'cameras' && !configuredText(item.streamUrl) && !configuredText(item.snapshotUrl)) errors.push(`${item.label}: enter a stream or snapshot URL`)
+      if (section === 'securitySensors' && !configuredText(item.inputType) && !assigned(item.gpio) && !assigned(item.senseGpio)) errors.push(`${item.label}: select a security input strategy`)
       if (['waterPumps', 'customIo', 'inverters'].includes(section) && item.controlMode === 'controller' && !(Number.isInteger(item.relay) && item.relay >= 0)) errors.push(`${item.label}: controller-managed outputs require a relay`)
       if (section === 'waterHeaters' && item.controlMode === 'controller' && !['acElementRelay', 'dcElementRelay', 'propaneRelay'].some(key => Number.isInteger(item[key]) && item[key] >= 0)) errors.push(`${item.label}: assign a heating output`)
       if (section === 'securitySensors' && item.zoneId && !(profile.securityZones || []).some(zone => zone.enabled && zone.id === item.zoneId)) errors.push(`${item.label}: select an enabled security zone`)

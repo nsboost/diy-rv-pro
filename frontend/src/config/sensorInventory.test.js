@@ -30,6 +30,26 @@ test('setup rejects controller-incompatible timing, calibration and capacity val
   assert.ok(validateProfile(profile).some(error => error.includes('HVAC control mode')))
 })
 
+test('enabled equipment requires its input or output even when imported fields are omitted', () => {
+  const profile = structuredClone(demoProfile)
+  delete profile.generators[0].startRelay
+  delete profile.acBreakers[0].relay
+  profile.batteries[0].communication = 'disabled'
+  profile.batteries[0].sensorType = 'disabled'
+  profile.batteries[0].senseGpio = -1
+  profile.batteries[0].adcChannel = -1
+  profile.waterTanks[0].sensorType = 'disabled'
+  profile.cameras = [{id:'camera',label:'Camera',enabled:true,streamUrl:'',snapshotUrl:''}]
+  const errors = validateProfile(profile)
+  for (const message of ['assign a start relay','controllable circuits require a relay','communications or assign a sensor input','select a tank sensor type','stream or snapshot URL']) assert.ok(errors.some(error => error.includes(message)),message)
+  profile.generators[0].enabled = false
+  profile.acBreakers[0].enabled = false
+  profile.batteries[0].enabled = false
+  profile.waterTanks[0].enabled = false
+  profile.cameras[0].enabled = false
+  assert.deepEqual(validateProfile(profile),[])
+})
+
 test('setup measures text limits in UTF-8 bytes to match controller storage', () => {
   const profile = structuredClone(demoProfile)
   profile.rvProfile.name = 'é'.repeat(24)
