@@ -272,6 +272,16 @@ function MetricCard({ title, children, icon, accent = 'green' }) {
 }
 
 function Modal({ title, children, onClose, busy = false }) {
+  useEffect(() => {
+    const handleKeyDown = event => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        if (!busy) onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [busy, onClose])
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={event => {
       if (event.target === event.currentTarget) {
@@ -1032,9 +1042,6 @@ export default function App() {
     const handleKeyDown = event => {
       if (event.key === 'Escape') {
         setMobileNavOpen(false)
-        setEditingHvacZone(null)
-        setEditingAutomationRule(null)
-        setCreatingAutomation(false)
       }
     }
 

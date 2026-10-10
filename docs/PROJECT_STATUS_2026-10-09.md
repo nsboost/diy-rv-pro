@@ -337,3 +337,7 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 - Telemetry reports an explicit storage error, and editing endpoints return recovery guidance. No automatic erase or recovery reset is provided; retain the device storage for diagnosis before repairing it.
 - The portable firmware suite passed 23 tests. These cover state validation and evaluator logic, not the NVS fault path. Physical storage fault injection and reboot activation persistence remain required.
 - ESP32-S3 build passed: static RAM 77,872 bytes; flash 994,129 bytes. No hardware flashed.
+
+### Keyboard dismissal respects pending operations (October 10)
+- Removed the application-level Escape handler that bypassed pending HVAC/automation dialog guards. Each modal now handles Escape using its current busy state; idle dialogs retain keyboard dismissal.
+- Validation: 85 frontend tests and production build passed. Browser verification opened an existing automation and dismissed it with Escape without saving changes. Pending-device behavior remains implementation-inspected until delayed controller requests can be exercised.
