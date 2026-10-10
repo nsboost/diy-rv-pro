@@ -982,7 +982,7 @@ export default function App() {
         if (token) {
           const contactsStartedAt = Date.now()
           const contacts = await requestControllerJson('/api/security/inputs', {headers:{Authorization:`Bearer ${token}`}}).catch(() => null)
-          snapshot.securityInputs = Array.isArray(contacts?.sensors) ? contacts.sensors.map(sensor => ({...sensor,sampledAt:sampledAtFromRequest(contactsStartedAt)})) : []
+          snapshot.securityInputs = Array.isArray(contacts?.sensors) ? contacts.sensors.map(sensor => ({...sensor,sampledAt:sampledAtFromRequest(contactsStartedAt, 0)})) : []
         }
         if (!cancelled) {
           setTelemetry({ ...snapshot, controller: { ...snapshot.controller, mode: 'device', online: true } })
