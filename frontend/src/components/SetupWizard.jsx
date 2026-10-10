@@ -372,6 +372,15 @@ export default function SetupWizard({ initialProfile, onSave, onDiscover }) {
   const [status, setStatus] = useState('')
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
+  useEffect(() => {
+    if (!dirty) return
+    const warnBeforeLeaving = event => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', warnBeforeLeaving)
+    return () => window.removeEventListener('beforeunload', warnBeforeLeaving)
+  }, [dirty])
   const [discovered, setDiscovered] = useState([])
   const [discovering, setDiscovering] = useState(false)
   const errors = useMemo(() => validateProfile(profile), [profile])

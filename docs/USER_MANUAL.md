@@ -43,6 +43,8 @@ commissioning. Complete installed first-boot enrollment still requires hardware 
 ### Saving, backups and imports
 
 Unsaved setup edits survive switching to another page and controller refreshes.
+While edits are unsaved, the tab requests browser confirmation before closing or
+reloading. Browser support varies; save or export the draft before leaving.
 They do not survive closing or reloading the browser tab. Save Configuration
 applies the inventory; Discard Edits and Reload restores the latest loaded
 inventory. A failed save retains your draft and displays the error.

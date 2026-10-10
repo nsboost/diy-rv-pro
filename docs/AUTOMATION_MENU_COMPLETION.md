@@ -13,6 +13,12 @@ does not silently save an enabled preference. Actual OS delivery still requires
 a granted permission and remains unverified. Mobile navigation backdrop dismissal
 was also verified after correcting the misplaced pending-dialog guard.
 
+Configuration drafts now register a browser unload guard only while dirty. In the
+embedded browser, a reload attempt retained the unsaved draft; after explicit
+discard, a clean reload completed normally. The embedded browser did not expose
+a visible confirmation dialog, so that prompt appearance remains unverified.
+The production build passed after this change.
+
 Recovery follow-up: the backup firmware build passed (996,481 bytes flash,
 77,872 bytes static RAM). Saved-record loading now checks the complete binary
 record boundary, rejecting embedded null terminators and hidden suffix bytes.
