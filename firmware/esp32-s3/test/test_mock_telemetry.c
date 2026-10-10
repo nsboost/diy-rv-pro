@@ -316,6 +316,42 @@ static bool execute_test_rule(const cJSON *rule,const cJSON *action,bool restori
 static cJSON *temperature_rules(void) {
     return cJSON_Parse("[{\"id\":\"temp-alert\",\"name\":\"Bedroom warm\",\"enabled\":true,\"trigger\":{\"source\":\"temperature.bedroom.tempF\",\"operator\":\">\",\"value\":\"75\",\"holdFor\":\"5 sec\"},\"action\":{\"target\":\"notification\",\"command\":\"sendAlert\",\"value\":\"Bedroom warm\"},\"reverse\":{\"enabled\":true,\"source\":\"temperature.bedroom.tempF\",\"operator\":\"<\",\"value\":\"72\",\"target\":\"notification\",\"command\":\"sendAlert\",\"restoreValue\":\"Recovered\"}}]");
 }
+static void test_activation_restore_excludes_timers_and_rejects_invalid_ids(void) {
+    automation_engine_t original={0}, rebooted={0};
+    cJSON *rules=temperature_rules();
+    cJSON *rule=cJSON_GetArrayItem(rules,0);
+    cJSON_ReplaceItemInObjectCaseSensitive(cJSON_GetObjectItemCaseSensitive(rule,"reverse"),"enabled",cJSON_CreateBool(false));
+    cJSON_ReplaceItemInObjectCaseSensitive(cJSON_GetObjectItemCaseSensitive(rule,"trigger"),"holdFor",cJSON_CreateString("0 sec"));
+    snprintf(original.rules[0].id,sizeof(original.rules[0].id),"temp-alert");
+    original.rules[0].active=true; original.rules[0].holding=true;
+    original.rules[0].since_ms=900000; original.rules[0].retry_ms=950000;
+    original.rules[0].previous=cJSON_CreateNumber(80);
+    cJSON *active=automation_engine_export_activation(&original,rules);
+    TEST_ASSERT_NOT_NULL(active); TEST_ASSERT_EQUAL(1,cJSON_GetArraySize(active));
+    TEST_ASSERT_TRUE(automation_engine_restore_activation(&rebooted,rules,active));
+    TEST_ASSERT_TRUE(rebooted.rules[0].active); TEST_ASSERT_FALSE(rebooted.rules[0].holding);
+    TEST_ASSERT_EQUAL(0,rebooted.rules[0].since_ms); TEST_ASSERT_EQUAL(0,rebooted.rules[0].retry_ms);
+    TEST_ASSERT_NULL(rebooted.rules[0].previous);
+    cJSON *bad=cJSON_Parse("[\"temp-alert\",\"temp-alert\"]");
+    TEST_ASSERT_FALSE(automation_engine_restore_activation(&rebooted,rules,bad));
+    TEST_ASSERT_TRUE(rebooted.rules[0].active); cJSON_Delete(bad);
+    bad=cJSON_Parse("[\"unknown\"]");
+    TEST_ASSERT_FALSE(automation_engine_restore_activation(&rebooted,rules,bad)); cJSON_Delete(bad);
+    executions=0; allow_execution=true;
+    cJSON *sources=cJSON_CreateObject(); cJSON_AddNullToObject(sources,"temperature.bedroom.tempF");
+    automation_engine_tick(&rebooted,rules,sources,1000,execute_test_rule,NULL);
+    cJSON_ReplaceItemInObjectCaseSensitive(sources,"temperature.bedroom.tempF",cJSON_CreateNumber(80));
+    automation_engine_tick(&rebooted,rules,sources,2000,execute_test_rule,NULL);
+    TEST_ASSERT_EQUAL(0,executions);
+    cJSON_ReplaceItemInObjectCaseSensitive(sources,"temperature.bedroom.tempF",cJSON_CreateNumber(70));
+    automation_engine_tick(&rebooted,rules,sources,3000,execute_test_rule,NULL);
+    cJSON_ReplaceItemInObjectCaseSensitive(sources,"temperature.bedroom.tempF",cJSON_CreateNumber(80));
+    automation_engine_tick(&rebooted,rules,sources,4000,execute_test_rule,NULL);
+    TEST_ASSERT_EQUAL(1,executions);
+    automation_engine_reset(&original); automation_engine_reset(&rebooted);
+    cJSON_Delete(active); cJSON_Delete(sources); cJSON_Delete(rules);
+}
+
 static void test_active_alert_survives_unavailable_input_without_duplicate(void) {
     automation_engine_t engine={0};
     cJSON *rules=temperature_rules(), *sources=cJSON_CreateObject();
@@ -596,6 +632,7 @@ void app_main(void)
 #endif
 {
     UNITY_BEGIN();
+    RUN_TEST(test_activation_restore_excludes_timers_and_rejects_invalid_ids);
     RUN_TEST(test_active_alert_survives_unavailable_input_without_duplicate);
     RUN_TEST(test_unrelated_profile_edits_preserve_automation_inputs);
     RUN_TEST(test_contact_rule_comparisons_require_boolean_semantics);

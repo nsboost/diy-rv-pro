@@ -379,3 +379,9 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 - Firmware retains successful activation when the trigger input is unavailable instead of treating missing data as a healthy nonmatching value. Hold timing still resets. A healthy nonmatching value rearms a non-restoring rule; recovery to the same triggered value alone does not duplicate its alert.
 - 25 firmware host tests passed, including activation, null input, same-condition recovery, healthy recovery and subsequent reactivation. This is a prerequisite for reboot persistence; activation is still RAM-only and physical fault behavior remains unverified.
 - ESP32-S3 build passed: static RAM 77,872 bytes; flash 994,609 bytes. No hardware flashed.
+
+### Activation-only reboot-state foundation (October 10)
+- Added portable export/restore helpers for enabled rule activation by stable ID. Restore validates all IDs and uniqueness before changing engine state, rejecting unknown references. No hold/retry uptime, input availability or previous sample is restored.
+- 26 firmware host tests passed. New regression restores activation into a fresh engine, survives missing input and same-condition recovery without delivery, then rearms on a healthy recovery and fires again on a new trigger.
+- These helpers are not yet connected to NVS. Remaining work is atomic activation-plus-notification persistence, saved-state version migration, rule-edit consistency and hardware reboot/fault verification. Actual reboot persistence is not claimed.
+- ESP32-S3 build passed: static RAM 77,872 bytes; flash 994,613 bytes. No hardware flashed.

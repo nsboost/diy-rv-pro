@@ -37,3 +37,8 @@ void automation_engine_reset_rule(automation_engine_t *engine, const char *id);
 void automation_engine_tick(automation_engine_t *engine, const cJSON *rules,
                             const cJSON *sources, uint64_t now_ms,
                             automation_executor_t execute, void *context);
+
+// Activation only: never serialize monotonic timers or previous samples.
+// Caller owns the export. Restore validates everything before mutating engine.
+cJSON *automation_engine_export_activation(const automation_engine_t *engine, const cJSON *rules);
+bool automation_engine_restore_activation(automation_engine_t *engine, const cJSON *rules, const cJSON *active_ids);

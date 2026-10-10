@@ -395,3 +395,43 @@ void automation_engine_tick(automation_engine_t *engine, const cJSON *rules,
         state->retry_ms = now_ms + 30000;
     }
 }
+
+static bool enabled_rule_exists(const cJSON *rules, const char *id) {
+  const cJSON *rule;
+  cJSON_ArrayForEach(rule, rules)
+    if (!strcmp(str(rule, "id"), id) && cJSON_IsTrue(get(rule, "enabled")))
+      return true;
+  return false;
+}
+cJSON *automation_engine_export_activation(const automation_engine_t *engine, const cJSON *rules) {
+  if (!engine || !cJSON_IsArray(rules)) return NULL;
+  cJSON *active = cJSON_CreateArray();
+  if (!active) return NULL;
+  for (size_t i = 0; i < DIY_AUTOMATION_MAX_RULES; i++) {
+    const automation_rule_state_t *state = &engine->rules[i];
+    if (!state->active || !state->id[0] || !enabled_rule_exists(rules, state->id)) continue;
+    cJSON *id = cJSON_CreateString(state->id);
+    if (!id || !cJSON_AddItemToArray(active, id)) {
+      cJSON_Delete(id); cJSON_Delete(active); return NULL;
+    }
+  }
+  return active;
+}
+bool automation_engine_restore_activation(automation_engine_t *engine, const cJSON *rules, const cJSON *active_ids) {
+  if (!engine || !cJSON_IsArray(active_ids) || cJSON_GetArraySize(active_ids) > DIY_AUTOMATION_MAX_RULES ||
+      !automation_validate_rules(rules, NULL, 0)) return false;
+  const cJSON *id;
+  cJSON_ArrayForEach(id, active_ids) {
+    if (!cJSON_IsString(id) || !id->valuestring[0] || strlen(id->valuestring) > 32 ||
+        !enabled_rule_exists(rules, id->valuestring)) return false;
+    for (const cJSON *other = id->next; other; other = other->next)
+      if (cJSON_IsString(other) && !strcmp(id->valuestring, other->valuestring)) return false;
+  }
+  automation_engine_reset(engine);
+  size_t slot = 0;
+  cJSON_ArrayForEach(id, active_ids) {
+    snprintf(engine->rules[slot].id, sizeof(engine->rules[slot].id), "%s", id->valuestring);
+    engine->rules[slot++].active = true;
+  }
+  return true;
+}
