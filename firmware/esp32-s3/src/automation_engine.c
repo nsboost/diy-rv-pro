@@ -198,6 +198,19 @@ invalid:
     snprintf(error, error_len, "Stored automation state is invalid");
   return false;
 }
+void automation_engine_reset_rule(automation_engine_t *engine, const char *id) {
+  if (!id)
+    return;
+  for (size_t i = 0; i < DIY_AUTOMATION_MAX_RULES; i++) {
+    automation_rule_state_t *state = &engine->rules[i];
+    if (strcmp(state->id, id))
+      continue;
+    cJSON_Delete(state->previous);
+    cJSON_Delete(state->previous_restore);
+    memset(state, 0, sizeof(*state));
+    return;
+  }
+}
 void automation_engine_reset(automation_engine_t *engine) {
   for (size_t i = 0; i < DIY_AUTOMATION_MAX_RULES; i++) {
     cJSON_Delete(engine->rules[i].previous);
@@ -267,11 +280,38 @@ void automation_engine_tick(automation_engine_t *engine, const cJSON *rules,
   const cJSON *actions[DIY_AUTOMATION_MAX_RULES] = {0};
   bool restoring[DIY_AUTOMATION_MAX_RULES] = {0};
   int index = 0;
+  // Preserve activation by identity when editor order changes or rules are
+  // deleted.
+  for (int i = 0; i < DIY_AUTOMATION_MAX_RULES; i++) {
+    const char *id = engine->rules[i].id;
+    if (!id[0])
+      continue;
+    bool found = false;
+    const cJSON *candidate;
+    cJSON_ArrayForEach(candidate, rules) if (!strcmp(id, str(candidate, "id")))
+        found = true;
+    if (!found)
+      automation_engine_reset_rule(engine, id);
+  }
   const cJSON *rule;
   cJSON_ArrayForEach(rule, rules) {
     if (index >= DIY_AUTOMATION_MAX_RULES)
       break;
-    int slot = index++;
+    index++;
+    int slot = -1;
+    for (int i = 0; i < DIY_AUTOMATION_MAX_RULES; i++)
+      if (!strcmp(engine->rules[i].id, str(rule, "id"))) {
+        slot = i;
+        break;
+      }
+    if (slot < 0)
+      for (int i = 0; i < DIY_AUTOMATION_MAX_RULES; i++)
+        if (!engine->rules[i].id[0]) {
+          slot = i;
+          break;
+        }
+    if (slot < 0)
+      break;
     automation_rule_state_t *state = &engine->rules[slot];
     if (strcmp(state->id, str(rule, "id"))) {
       cJSON_Delete(state->previous);
@@ -318,7 +358,7 @@ void automation_engine_tick(automation_engine_t *engine, const cJSON *rules,
   // Evaluate every condition once, then execute interlocks before equipment
   // actions.
   for (int pass = 0; pass < 2; pass++)
-    for (int slot = 0; slot < index; slot++) {
+    for (int slot = 0; slot < DIY_AUTOMATION_MAX_RULES; slot++) {
       if (!pending_rules[slot] || !execute)
         continue;
       bool block = !strncmp(str(actions[slot], "command"), "block", 5);

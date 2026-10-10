@@ -347,6 +347,31 @@ static void test_saved_notifications_reject_corrupt_payloads(void) {
     TEST_ASSERT_FALSE(automation_validate_saved_state(state,error,sizeof(error)));
     cJSON_Delete(state);
 }
+static void test_rule_edits_and_reordering_preserve_unrelated_activation(void) {
+    automation_engine_t engine={0}; cJSON *rules=temperature_rules();
+    cJSON *first=cJSON_GetArrayItem(rules,0);
+    cJSON_ReplaceItemInObjectCaseSensitive(cJSON_GetObjectItemCaseSensitive(first,"trigger"),"holdFor",cJSON_CreateString("0 sec"));
+    cJSON_ReplaceItemInObjectCaseSensitive(cJSON_GetObjectItemCaseSensitive(first,"reverse"),"enabled",cJSON_CreateBool(false));
+    cJSON *second=cJSON_Duplicate(first,true);
+    cJSON_ReplaceItemInObjectCaseSensitive(second,"id",cJSON_CreateString("second-alert"));
+    cJSON_AddItemToArray(rules,second);
+    cJSON *sources=cJSON_CreateObject(); cJSON_AddNumberToObject(sources,"temperature.bedroom.tempF",80);
+    executions=0; allow_execution=true;
+    automation_engine_tick(&engine,rules,sources,1000,execute_test_rule,NULL);
+    TEST_ASSERT_EQUAL(2,executions);
+    cJSON *reordered=cJSON_CreateArray();
+    cJSON_AddItemToArray(reordered,cJSON_Duplicate(second,true));
+    cJSON_AddItemToArray(reordered,cJSON_Duplicate(first,true));
+    automation_engine_tick(&engine,reordered,sources,2000,execute_test_rule,NULL);
+    TEST_ASSERT_EQUAL(2,executions);
+    automation_engine_reset_rule(&engine,"temp-alert");
+    automation_engine_tick(&engine,reordered,sources,3000,execute_test_rule,NULL);
+    TEST_ASSERT_EQUAL(3,executions);
+    cJSON_DeleteItemFromArray(reordered,1);
+    automation_engine_tick(&engine,reordered,sources,4000,execute_test_rule,NULL);
+    TEST_ASSERT_EQUAL(3,executions);
+    automation_engine_reset(&engine); cJSON_Delete(rules); cJSON_Delete(reordered); cJSON_Delete(sources);
+}
 static void test_automation_clock_comparisons(void) {
     char error[96]; cJSON *rules=temperature_rules();
     cJSON *rule=cJSON_GetArrayItem(rules,0), *trigger=cJSON_GetObjectItemCaseSensitive(rule,"trigger");
@@ -390,6 +415,7 @@ void app_main(void)
     RUN_TEST(test_automation_hold_fault_reset_restore_and_retry);
     RUN_TEST(test_automation_rejects_invalid_rules);
     RUN_TEST(test_automation_clock_comparisons);
+    RUN_TEST(test_rule_edits_and_reordering_preserve_unrelated_activation);
     RUN_TEST(test_automation_zone_sources_follow_addressed_sensor);
     RUN_TEST(test_saved_notifications_reject_corrupt_payloads);
     RUN_TEST(test_timezone_rules_preserve_dst_and_reject_unknown_zones);

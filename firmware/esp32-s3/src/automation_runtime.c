@@ -117,7 +117,8 @@ static cJSON *source_values(void) {
   cJSON *sources =
       automation_temperature_sources(profile, devices, inputs_pending);
   int minute = wifi_manager_local_minute();
-  if (sources && minute >= 0) cJSON_AddNumberToObject(sources, "time.local", minute);
+  if (sources && minute >= 0)
+    cJSON_AddNumberToObject(sources, "time.local", minute);
   cJSON_Delete(devices);
   return sources;
 }
@@ -274,7 +275,11 @@ bool automation_runtime_control(const cJSON *command, char *error,
     next_rules = NULL;
     next_alerts = NULL;
     if (strncmp(type, "notification.", 13))
-      automation_engine_reset(&engine);
+      automation_engine_reset_rule(
+          &engine,
+          !strcmp(type, "automation.upsert")
+              ? text(cJSON_GetObjectItemCaseSensitive(command, "rule"), "id")
+              : id);
   }
 finish:
   cJSON_Delete(next_rules);
@@ -290,12 +295,15 @@ void automation_runtime_append(cJSON *telemetry) {
   cJSON *runtime = cJSON_CreateObject();
   for (size_t i = 0; i < DIY_AUTOMATION_MAX_RULES; ++i) {
     const automation_rule_state_t *state = &engine.rules[i];
-    if (!state->id[0]) continue;
+    if (!state->id[0])
+      continue;
     cJSON *item = cJSON_CreateObject();
     cJSON_AddBoolToObject(item, "active", state->active);
     cJSON_AddBoolToObject(item, "holding", state->holding);
     cJSON_AddBoolToObject(item, "sourceAvailable", state->input_available);
-    if (state->retry_ms) cJSON_AddStringToObject(item, "error", "Action failed; review notifications. Retrying.");
+    if (state->retry_ms)
+      cJSON_AddStringToObject(item, "error",
+                              "Action failed; review notifications. Retrying.");
     cJSON_AddItemToObject(runtime, state->id, item);
   }
   cJSON_DeleteItemFromObjectCaseSensitive(telemetry, "ruleRuntime");

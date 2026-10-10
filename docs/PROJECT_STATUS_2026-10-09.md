@@ -92,9 +92,9 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 - The frontend suite currently contains 35 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
-  contain 17 passing tests including disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
+  contain 18 passing tests including rule identity retention, disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
   failed-execution retries. ESP32-S3 integration build passed: 77,872 bytes static
-  RAM and 991,481 bytes application flash. Runtime headroom and hardware operation
+  RAM and 991,733 bytes application flash. Runtime headroom and hardware operation
   still need bench verification.
 
 The active goal remains open until the remaining runtime/menu gaps and GitHub
@@ -157,6 +157,11 @@ frontend and firmware. Setup labels the existing `adcChannel` field as ADC GPIO
 so users enter the physical pin rather than a peripheral channel index. Disabled
 equipment does not reserve the pin. The 35-test frontend suite and 17 firmware
 host tests cover the overlap and disabled-equipment exception.
+
+Firmware evaluator state follows stable rule identities rather than list indexes.
+Editing, enabling, disabling or deleting a rule resets that rule without clearing
+unrelated successful activations. Host regression tests verify reordering,
+individual reset and deletion do not repeat unrelated alerts (18 tests pass).
 
 Stored notification recovery now validates the version, bounded field types,
 unique alert identities and nonnegative timestamps before publishing the state.
