@@ -295,3 +295,5 @@ firmware/partition/web-image installation, rather than an app-only update. No
 board has been flashed by this change.
 
 Inventory identities use 1-32 ASCII letters, digits, hyphens or underscores, beginning with a letter or digit. The reserved identities constructor and prototype are rejected. IDs are unique across the inventory; friendly labels support UTF-8 text within 48 bytes. Imported identities that contain dots, spaces or unsupported characters must be corrected along with every referring sensor, bus, zone and automation reference; identities are never silently renamed.
+
+Enabled tank inventory requires capacityGal greater than zero (maximum 500) and explicit integer emptyMv/fullMv values from 0 to 3300 that differ. Descending calibration is permitted. Disabled inventory can retain incomplete assignments. These bounds validate configuration only; tank input acquisition and physical calibration commissioning remain pending.

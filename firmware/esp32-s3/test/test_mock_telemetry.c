@@ -68,12 +68,21 @@ void test_feature_config_accepts_tank_setup(void)
     cJSON_AddStringToObject(fresh, "sensorType", "resistive-0-180-ohm");
     cJSON_AddNumberToObject(fresh, "adcChannel", 3);
     cJSON_AddNumberToObject(fresh, "capacityGal", 80);
+    cJSON_AddNumberToObject(fresh, "emptyMv", 0);
+    cJSON_AddNumberToObject(fresh, "fullMv", 3300);
     cJSON_AddItemToArray(tanks, fresh);
 
     char error[128] = {0};
     TEST_ASSERT_EQUAL(ESP_OK, feature_config_update_from_json(&features, root, error, sizeof(error)));
     TEST_ASSERT_TRUE(strstr(features.profile_json, "\"waterTanks\"") != NULL);
     TEST_ASSERT_TRUE(strstr(features.profile_json, "\"fresh\"") != NULL);
+    cJSON_ReplaceItemInObjectCaseSensitive(fresh,"fullMv",cJSON_CreateNumber(0));
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG,feature_config_update_from_json(&features,root,error,sizeof(error)));
+    cJSON_ReplaceItemInObjectCaseSensitive(fresh,"fullMv",cJSON_CreateNumber(3300));
+    cJSON_ReplaceItemInObjectCaseSensitive(fresh,"capacityGal",cJSON_CreateNumber(0));
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG,feature_config_update_from_json(&features,root,error,sizeof(error)));
+    cJSON_ReplaceItemInObjectCaseSensitive(fresh,"enabled",cJSON_CreateBool(false));
+    TEST_ASSERT_EQUAL(ESP_OK,feature_config_update_from_json(&features,root,error,sizeof(error)));
     cJSON_Delete(root);
 }
 

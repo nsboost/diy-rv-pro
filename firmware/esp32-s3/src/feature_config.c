@@ -308,6 +308,15 @@ static bool validate_tank(const cJSON *tank, char *error, size_t error_len)
         set_error(error, error_len, "Enabled tank requires a sensor type");
         return false;
     }
+    if (is_enabled(tank)) {
+        const cJSON *capacity = cJSON_GetObjectItemCaseSensitive(tank, "capacityGal");
+        const cJSON *empty = cJSON_GetObjectItemCaseSensitive(tank, "emptyMv");
+        const cJSON *full = cJSON_GetObjectItemCaseSensitive(tank, "fullMv");
+        if (!cJSON_IsNumber(capacity) || capacity->valueint <= 0 || !cJSON_IsNumber(empty) || !cJSON_IsNumber(full) || empty->valueint == full->valueint) {
+            set_error(error, error_len, "Enabled tank requires positive capacity and distinct empty/full calibration");
+            return false;
+        }
+    }
     return true;
 }
 
