@@ -21,8 +21,9 @@ static cJSON *rules, *alerts, *profile, *committed_activation;
 static bool configured;
 static bool inputs_pending;
 static bool storage_fault;
+static bool recovery_pending;
 static unsigned sequence;
-esp_err_t automation_runtime_export_storage(void **data, size_t *size) {
+static esp_err_t export_storage(void **data, size_t *size, bool original) {
   if (!data || !size || !lock) return ESP_ERR_INVALID_ARG;
   *data = NULL;
   *size = 0;
@@ -30,14 +31,24 @@ esp_err_t automation_runtime_export_storage(void **data, size_t *size) {
   nvs_handle_t handle;
   esp_err_t result = nvs_open("rv_automation", NVS_READONLY, &handle);
   if (result == ESP_OK) {
+    char key[16] = "state";
+    if (original) {
+      result = ESP_ERR_NVS_NOT_FOUND;
+      for (int slot = 7; slot >= 0; slot--) {
+        snprintf(key, sizeof(key), "backup%d", slot);
+        size_t stored_size = 0;
+        result = nvs_get_blob(handle, key, NULL, &stored_size);
+        if (result != ESP_ERR_NVS_NOT_FOUND) break;
+      }
+    }
     size_t length = 0;
-    result = nvs_get_blob(handle, "state", NULL, &length);
+    if (result == ESP_OK) result = nvs_get_blob(handle, key, NULL, &length);
     if (result == ESP_OK && (!length || length > 65537)) result = ESP_ERR_INVALID_SIZE;
     if (result == ESP_OK) {
       void *bytes = malloc(length);
       if (!bytes) result = ESP_ERR_NO_MEM;
       else {
-        result = nvs_get_blob(handle, "state", bytes, &length);
+        result = nvs_get_blob(handle, key, bytes, &length);
         if (result == ESP_OK) { *data = bytes; *size = length; }
         else free(bytes);
       }
@@ -45,6 +56,69 @@ esp_err_t automation_runtime_export_storage(void **data, size_t *size) {
     nvs_close(handle);
   }
   xSemaphoreGive(lock);
+  return result;
+}
+esp_err_t automation_runtime_export_storage(void **data, size_t *size) {
+  return export_storage(data, size, false);
+}
+esp_err_t automation_runtime_export_original(void **data, size_t *size) {
+  return export_storage(data, size, true);
+}
+
+esp_err_t automation_runtime_recover(const cJSON *state, char *error, size_t error_len) {
+  if (!lock) return ESP_ERR_INVALID_STATE;
+  cJSON *prepared = automation_prepare_recovery(state, error, error_len);
+  if (!prepared) return ESP_ERR_INVALID_ARG;
+  char *payload = cJSON_PrintUnformatted(prepared);
+  cJSON_Delete(prepared);
+  if (!payload) return ESP_ERR_NO_MEM;
+  size_t payload_size = strlen(payload) + 1;
+  if (payload_size > 65537) { cJSON_free(payload); return ESP_ERR_INVALID_SIZE; }
+  xSemaphoreTake(lock, portMAX_DELAY);
+  esp_err_t result = ESP_ERR_INVALID_STATE;
+  if (!storage_fault || recovery_pending) goto done;
+  nvs_handle_t handle;
+  result = nvs_open("rv_automation", NVS_READWRITE, &handle);
+  if (result != ESP_OK) goto done;
+  size_t size = 0;
+  void *original = NULL, *verified = NULL;
+  result = nvs_get_blob(handle, "state", NULL, &size);
+  if (result != ESP_OK) goto closed;
+  if (!size || size > 65537) { result = ESP_ERR_INVALID_SIZE; goto closed; }
+  original = malloc(size);
+  verified = malloc(size);
+  if (!original || !verified) { result = ESP_ERR_NO_MEM; goto closed; }
+  result = nvs_get_blob(handle, "state", original, &size);
+  if (result != ESP_OK) goto closed;
+  char key[16];
+  bool available = false;
+  for (int slot = 0; slot < 8; slot++) {
+    snprintf(key, sizeof(key), "backup%d", slot);
+    size_t previous_size = 0;
+    result = nvs_get_blob(handle, key, NULL, &previous_size);
+    if (result == ESP_ERR_NVS_NOT_FOUND) { available = true; break; }
+    if (result != ESP_OK) goto closed;
+  }
+  if (!available) { result = ESP_ERR_NVS_NOT_ENOUGH_SPACE; goto closed; }
+  result = nvs_set_blob(handle, key, original, size);
+  if (result == ESP_OK) result = nvs_commit(handle);
+  if (result != ESP_OK) goto closed;
+  size_t verified_size = size;
+  result = nvs_get_blob(handle, key, verified, &verified_size);
+  if (result != ESP_OK) goto closed;
+  if (verified_size != size || memcmp(original, verified, size)) { result = ESP_FAIL; goto closed; }
+  /* Only replace the working record after a committed, read-back original copy. */
+  result = nvs_set_blob(handle, "state", payload, payload_size);
+  if (result == ESP_OK) result = nvs_commit(handle);
+  if (result == ESP_OK) recovery_pending = true;
+closed:
+  free(original); free(verified);
+  nvs_close(handle);
+done:
+  xSemaphoreGive(lock);
+  cJSON_free(payload);
+  if (result != ESP_OK && error && error_len)
+    snprintf(error, error_len, "Recovery not confirmed (%s); retain backups and verify storage before retrying", esp_err_to_name(result));
   return result;
 }
 static const char *text(const cJSON *obj, const char *key) {
@@ -266,7 +340,9 @@ bool automation_runtime_control(const cJSON *command, char *error,
   xSemaphoreTake(lock, portMAX_DELAY);
   if (storage_fault) {
     if (error && error_len)
-      snprintf(error, error_len, "Saved automation data could not be loaded; original retained. Storage recovery is required before editing rules.");
+      snprintf(error, error_len, "%s", recovery_pending
+        ? "Recovery saved with all rules disabled. Restart the controller before reviewing or editing rules."
+        : "Saved automation data could not be loaded; original retained. Storage recovery is required before editing rules.");
     xSemaphoreGive(lock);
     return false;
   }
@@ -360,7 +436,10 @@ void automation_runtime_append(cJSON *telemetry) {
   xSemaphoreTake(lock, portMAX_DELAY);
   if (storage_fault)
     cJSON_AddStringToObject(telemetry, "storageError",
-      "Saved automation data could not be loaded. Original retained; automation and rule edits are disabled pending storage recovery.");
+      recovery_pending
+        ? "Recovery saved; original retained. Restart the controller, review recovered rules, then enable them individually."
+        : "Saved automation data could not be loaded. Original retained; automation and rule edits are disabled pending storage recovery.");
+  cJSON_AddBoolToObject(telemetry, "automationRecoveryPending", recovery_pending);
   cJSON *runtime = cJSON_CreateObject();
   for (size_t i = 0; i < DIY_AUTOMATION_MAX_RULES; ++i) {
     const automation_rule_state_t *state = &engine.rules[i];

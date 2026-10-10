@@ -17,6 +17,19 @@ The ESP32-S3 serves the dashboard and local JSON API over the device access poin
   Returns 404 for an absent record and 500 for unreadable, empty, oversized
   (over 65,537 bytes) or allocation-failed records; originals remain untouched.
   This backup does not clear faults or import repaired data.
+- `GET /api/automation/original`: authenticated raw download of the most recent
+  original record retained by recovery. Returns 404 if no retained original exists.
+- `POST /api/automation/recovery`: authenticated recovery of a validated version-1
+  or version-2 JSON record, body limit 65,536 bytes. Available only while automation
+  storage is faulted and no successful recovery is awaiting restart. Firmware
+  prepares a version-2 copy with all rules disabled and activation cleared, retaining
+  notifications. It commits and reads back a separate original-record backup before
+  replacing the working record. A successful response is 202 with `saved: true` and
+  `restartRequired: true`; execution and edits stay blocked until restart. No
+  multi-key atomic transaction is claimed. Failed commits require checking state
+  before retrying. Eight original-copy slots are retained without overwriting; a full
+  slot set, oversized/unreadable original or memory/storage failure blocks recovery.
+  The import menu and on-device interrupted-write tests are not yet complete.
 - `PUT /api/config`: first-boot setup and subsequent configuration updates.
 - `POST /api/control`: rule CRUD, notification acknowledgment and prototype equipment controls. Always requires authorization. Body limit: 4,096 bytes.
 - `WS /ws/telemetry`: authorized telemetry WebSocket handshake.

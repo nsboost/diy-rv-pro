@@ -97,12 +97,14 @@ static esp_err_t temperature_handler(httpd_req_t *request)
     return send_json(request, temperature_inputs_to_json(), 200);
 }
 
-static esp_err_t automation_backup_handler(httpd_req_t *request)
+static esp_err_t send_automation_backup(httpd_req_t *request, bool original)
 {
     if (!request_is_authorized(request)) return httpd_resp_send_err(request, HTTPD_401_UNAUTHORIZED, "Authentication required");
     void *bytes = NULL;
     size_t size = 0;
-    esp_err_t result = automation_runtime_export_storage(&bytes, &size);
+    esp_err_t result = original
+        ? automation_runtime_export_original(&bytes, &size)
+        : automation_runtime_export_storage(&bytes, &size);
     if (result != ESP_OK) {
         if (result == ESP_ERR_NVS_NOT_FOUND) return httpd_resp_send_err(request, HTTPD_404_NOT_FOUND, "No saved automation record");
         return httpd_resp_send_err(request, HTTPD_500_INTERNAL_SERVER_ERROR, "Saved automation record could not be read; original retained");
@@ -114,6 +116,12 @@ static esp_err_t automation_backup_handler(httpd_req_t *request)
     result = httpd_resp_send(request, bytes, size);
     free(bytes);
     return result;
+}
+static esp_err_t automation_backup_handler(httpd_req_t *request) {
+    return send_automation_backup(request, false);
+}
+static esp_err_t automation_original_handler(httpd_req_t *request) {
+    return send_automation_backup(request, true);
 }
 
 static esp_err_t config_get_handler(httpd_req_t *request)
@@ -157,6 +165,29 @@ static esp_err_t read_body_alloc(httpd_req_t *request, char **body, size_t max_l
     buffer[offset] = '\0';
     *body = buffer;
     return ESP_OK;
+}
+
+static esp_err_t automation_recovery_handler(httpd_req_t *request)
+{
+    if (!request_is_authorized(request)) return httpd_resp_send_err(request, HTTPD_401_UNAUTHORIZED, "Authentication required");
+    char *body = NULL;
+    if (read_body_alloc(request, &body, 65536) != ESP_OK) return httpd_resp_send_err(request, HTTPD_400_BAD_REQUEST, "Invalid recovery body");
+    const char *end = NULL;
+    cJSON *state = cJSON_ParseWithLengthOpts(body, request->content_len + 1, &end, true);
+    bool complete = state && end == body + request->content_len;
+    char error[160] = "Invalid recovery record";
+    esp_err_t result = complete ? automation_runtime_recover(state, error, sizeof(error)) : ESP_ERR_INVALID_ARG;
+    cJSON_Delete(state); free(body);
+    if (result != ESP_OK) {
+        if (result == ESP_ERR_INVALID_ARG || result == ESP_ERR_INVALID_SIZE)
+            return httpd_resp_send_err(request, HTTPD_400_BAD_REQUEST, error);
+        return httpd_resp_send_err(request, HTTPD_500_INTERNAL_SERVER_ERROR, error);
+    }
+    cJSON *response = cJSON_CreateObject();
+    cJSON_AddBoolToObject(response, "saved", true);
+    cJSON_AddBoolToObject(response, "restartRequired", true);
+    cJSON_AddStringToObject(response, "message", "Recovery saved with all rules disabled; original retained. Restart and review before enabling rules.");
+    return send_json(request, response, 202);
 }
 
 static esp_err_t config_put_handler(httpd_req_t *request)
@@ -347,7 +378,7 @@ esp_err_t api_server_start(api_context_t *context)
 
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.uri_match_fn = httpd_uri_match_wildcard;
-    config.max_uri_handlers = 12;
+    config.max_uri_handlers = 14;
 
     httpd_handle_t server = NULL;
     ESP_RETURN_ON_ERROR(httpd_start(&server, &config), TAG, "Failed to start HTTP server");
@@ -358,6 +389,8 @@ esp_err_t api_server_start(api_context_t *context)
         {.uri = "/api/telemetry", .method = HTTP_GET, .handler = telemetry_handler},
         {.uri = "/api/temperature/devices", .method = HTTP_GET, .handler = temperature_handler},
         {.uri = "/api/automation/backup", .method = HTTP_GET, .handler = automation_backup_handler},
+        {.uri = "/api/automation/original", .method = HTTP_GET, .handler = automation_original_handler},
+        {.uri = "/api/automation/recovery", .method = HTTP_POST, .handler = automation_recovery_handler},
         {.uri = "/api/security/inputs", .method = HTTP_GET, .handler = security_inputs_handler},
         {.uri = "/api/config", .method = HTTP_GET, .handler = config_get_handler},
         {.uri = "/api/config", .method = HTTP_PUT, .handler = config_put_handler},

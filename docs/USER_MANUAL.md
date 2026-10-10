@@ -156,6 +156,13 @@ repair rules or resume automation. Repair/import and physical recovery testing
 remain under development. If download fails, the original is still retained;
 do not erase flash as a workaround.
 
+If NVS initialization itself fails, firmware now retains the partition and stops
+startup with a serial diagnostic instead of automatically erasing configuration,
+credentials and recovery records. The dashboard will be unavailable in that case;
+partition-level maintenance recovery is required. The authenticated record-repair
+API can only operate when NVS is readable. Its import menu and device fault tests
+remain unfinished.
+
 See [Installation Manual](INSTALLATION_MANUAL.md),
 [Bill of Materials](BILL_OF_MATERIALS.md) and
 [Delivery Status](DELIVERY_STATUS.md) for current support boundaries.

@@ -58,8 +58,16 @@ recovery tests remain outstanding.
   creates a version-2 copy with every rule disabled and activation cleared, and
   retains alert history without modifying the source. Host tests cover migration,
   active-rule clearing and each allocation failure with zero leaked allocations.
-  All 30 firmware host tests and the ESP32-S3 build pass. This helper is not yet
-  connected to a repair endpoint or import menu; no recovery-completion claim.
+  All 30 firmware host tests and the ESP32-S3 build pass. This helper is now
+  connected to the authenticated repair endpoint, which commits and verifies a
+  separate original copy before replacing the working record. Original download
+  and restart-pending feedback are implemented. The import menu, mocked NVS-failure
+  coverage and physical interrupted-write testing remain incomplete; no
+  recovery-completion claim.
+  Startup no longer automatically erases the whole NVS partition on no-free-pages
+  or version errors. Failed initialization retains the partition and stops startup
+  with a diagnostic; readable-record API recovery and partition-level maintenance
+  are distinct paths. Initialization-failure and power-loss bench checks remain open.
 - [ ] Exercise pending save/delete/acknowledgement and keyboard/backdrop dismissal
   with delayed live requests. Idle browser flows passed; pending behavior is
   currently implementation-inspected and request-helper tested.
