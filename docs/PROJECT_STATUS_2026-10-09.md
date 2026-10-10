@@ -314,3 +314,9 @@ Browser verification of setup draft workflow: editing Demo RV to Draft verificat
 Configuration imports now validate raw JSON inventory before normalization can substitute defaults. Malformed lists and coerced flags are rejected, invalid JSON has a clear message, and UTF-8 input size is bounded. Import is disabled during save. Regression covers valid inventory, invalid JSON/version/list/flags and oversize input. All 79 frontend tests and the production build pass; browser import verification remains pending.
 
 Browser import/export verification: Export Configuration downloaded diy-rv-configuration.json; the actual file passed importProfileJson validation and contained Demo RV, two HVAC zones and two addressed sensors. Importing the same file through the browser chooser displayed Imported for review. Save to apply. and the unsaved indicator. Discard restored the clean current inventory; no save was performed. Screenshot: frontend/demo-configuration-import.png (local ignored artifact).
+
+### Setup drafts across page navigation (October 10)
+- Kept the Setup Wizard mounted in a hidden container when visiting other pages, preserving unsaved inventory, selected equipment, and discovery results during navigation.
+- Browser verification: edited RV name without saving, visited Automations, returned to Setup, and confirmed the draft remained. Discard restored Demo RV; no test inventory was saved. Browser error log was empty.
+- Validation: 79 frontend tests passed; production build passed. Existing bundle-size warning remains. Drafts are session-only and must be saved before closing or reloading the browser.
+

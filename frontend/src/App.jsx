@@ -1155,10 +1155,7 @@ export default function App() {
     </>
   )
 
-  const renderPage = () => {
-    if (activeSection === 'notifications') return <NotificationsPanel telemetry={{...snapshot, notificationSettings: browserSettings}} onAcknowledge={id => { if (snapshot.controller.mode === 'device') return dispatch({type:'notification.acknowledge',id}); else { controller.acknowledge(id); setTelemetry(current => ({ ...current, notifications: controller.getTelemetry().notifications, controller: {...current.controller, alerts: controller.getTelemetry().controller.alerts} })) } }} onSettings={settings => { const next = saveNotificationSettings(window.localStorage, browserSettings, settings); controller.setNotificationSettings(next, {persistSettings:false}); setBrowserSettings(next); setTelemetry(current => ({ ...current, notificationSettings: next })) }} />
-    if (activeSection === 'setup') {
-      return (
+  const renderSetup = () => (
         <section className="setup-page" id="section-setup">
           <SetupWizard initialProfile={systemProfile} onSave={saveSystemProfile} onDiscover={async () => {
             if (snapshot.controller.mode !== 'device' && import.meta.env.DEV) return demoReadings().map(reading => ({...reading, busId: 'demo-bus', demo: true}))
@@ -1174,8 +1171,11 @@ export default function App() {
             }
           }} />
         </section>
-      )
-    }
+  )
+
+  const renderPage = () => {
+    if (activeSection === 'notifications') return <NotificationsPanel telemetry={{...snapshot, notificationSettings: browserSettings}} onAcknowledge={id => { if (snapshot.controller.mode === 'device') return dispatch({type:'notification.acknowledge',id}); else { controller.acknowledge(id); setTelemetry(current => ({ ...current, notifications: controller.getTelemetry().notifications, controller: {...current.controller, alerts: controller.getTelemetry().controller.alerts} })) } }} onSettings={settings => { const next = saveNotificationSettings(window.localStorage, browserSettings, settings); controller.setNotificationSettings(next, {persistSettings:false}); setBrowserSettings(next); setTelemetry(current => ({ ...current, notificationSettings: next })) }} />
+    if (activeSection === 'setup') return null
 
     if (activeSection === 'dashboard') {
       return renderDashboard()
@@ -1330,6 +1330,7 @@ export default function App() {
         }}>Download preserved demo data</button>}
         {snapshot.controller.equipmentMode === 'prototype-simulation' && <div className="demo-banner">Controller prototype · equipment readings and manual controls are simulated · addressed temperature alerts run on the controller</div>}
         {snapshot.controller.mode === 'simulation' && <div className="demo-banner">Demo simulation · equipment actions do not operate hardware · configuration and rules saved in this browser</div>}
+        <div hidden={activeSection !== 'setup'}>{renderSetup()}</div>
         {renderPage()}
         <footer className="footer-strip">
           <span>Firmware: {telemetry.controller.firmware}</span>

@@ -519,7 +519,7 @@ export default function SetupWizard({ initialProfile, onSave, onDiscover }) {
           <span key={label}>{label}: <strong>{enabled}/{total}</strong></span>
         ))}
       </div>
-      {dirty && <div className="configurator-status" role="status">Unsaved edits are preserved during controller refresh. <button type="button" className="secondary-action" disabled={saving} onClick={() => {setDirty(false);setSelectedIndexes({});setStatus('Reloaded current inventory. Unsaved edits discarded.')}}>Discard Edits and Reload</button></div>}
+      {dirty && <div className="configurator-status" role="status">Unsaved edits stay available while switching pages or refreshing controller data. Save before closing or reloading this browser tab. <button type="button" className="secondary-action" disabled={saving} onClick={() => {setDirty(false);setSelectedIndexes({});setStatus('Reloaded current inventory. Unsaved edits discarded.')}}>Discard Edits and Reload</button></div>}
       {status && <div className="configurator-status" role="status">{status}</div>}
     </form>
   )
