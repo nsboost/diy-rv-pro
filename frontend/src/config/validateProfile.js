@@ -74,6 +74,7 @@ export function validateProfile(profile) {
       }
       if (section === 'hvacZones' && item.controlMode === 'controller' && !['coolRelay', 'furnaceRelay', 'heatPumpRelay', 'fanRelay'].some(key => item[key] >= 0)) errors.push(`${item.label}: assign an equipment relay`)
       if (['acBreakers', 'dcCircuits'].includes(section) && item.controllable && item.relay < 0) errors.push(`${item.label}: controllable circuits require a relay`)
+      if (['waterPumps', 'customIo', 'inverters'].includes(section) && item.controlMode === 'controller' && !(Number.isInteger(item.relay) && item.relay >= 0)) errors.push(`${item.label}: controller-managed outputs require a relay`)
       if (section === 'waterHeaters' && item.controlMode === 'controller' && !['acElementRelay', 'dcElementRelay', 'propaneRelay'].some(key => Number.isInteger(item[key]) && item[key] >= 0)) errors.push(`${item.label}: assign a heating output`)
       if (section === 'securitySensors' && item.zoneId && !(profile.securityZones || []).some(zone => zone.enabled && zone.id === item.zoneId)) errors.push(`${item.label}: select an enabled security zone`)
       if (section === 'waterTanks' && (!(item.capacityGal > 0) || item.emptyMv === item.fullMv)) errors.push(`${item.label}: enter positive capacity and distinct empty/full calibration`)

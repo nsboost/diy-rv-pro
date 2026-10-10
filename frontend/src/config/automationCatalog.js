@@ -17,7 +17,7 @@ export function controlSystems(profile) {
     }
   }
   for (const section of ['acBreakers', 'dcCircuits', 'waterPumps', 'inverters', 'customIo']) {
-    for (const item of (profile[section] || []).filter(item => item.enabled && (item.controllable || item.controlMode === 'controller'))) {
+    for (const item of (profile[section] || []).filter(item => item.enabled && (item.controllable === true || item.controlMode === 'controller') && Number.isInteger(item.relay) && item.relay >= 0)) {
       systems.push({id: `device.${section}.${item.id}`, label: item.label, category: ({acBreakers:'AC Circuits',dcCircuits:'DC Circuits',waterPumps:'Water Pumps',waterHeaters:'Water Heaters',inverters:'Power Conversion',customIo:'Custom I/O'})[section],
         commands: ['acBreakers', 'dcCircuits'].includes(section) ? ['open', 'close', 'blockOn', 'unblock'] : ['turnOn', 'turnOff', 'blockOn', 'blockOff', 'unblock'], defaultCommand: ['acBreakers', 'dcCircuits'].includes(section) ? 'open' : 'turnOff'})
     }

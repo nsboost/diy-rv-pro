@@ -341,6 +341,23 @@ void test_inventory_flags_reject_non_boolean_values(void)
     TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG, feature_config_update_from_json(&features, root, error, sizeof(error)));
     cJSON_Delete(root);
 }
+
+void test_controller_pump_requires_assigned_relay(void)
+{
+    static diy_feature_config_t features;
+    feature_config_defaults(&features);
+    cJSON *root = feature_config_to_json(&features), *pump = cJSON_CreateObject();
+    cJSON_AddStringToObject(pump, "id", "pump-1");
+    cJSON_AddBoolToObject(pump, "enabled", true);
+    cJSON_AddStringToObject(pump, "controlMode", "controller");
+    cJSON_AddNumberToObject(pump, "relay", -1);
+    cJSON_AddItemToArray(cJSON_GetObjectItemCaseSensitive(root, "waterPumps"), pump);
+    char error[128] = {0};
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG, feature_config_update_from_json(&features, root, error, sizeof(error)));
+    cJSON_ReplaceItemInObjectCaseSensitive(pump, "relay", cJSON_CreateNumber(7));
+    TEST_ASSERT_EQUAL(ESP_OK, feature_config_update_from_json(&features, root, error, sizeof(error)));
+    cJSON_Delete(root);
+}
 static void test_timezone_rules_preserve_dst_and_reject_unknown_zones(void) {
     TEST_ASSERT_EQUAL_STRING("MST7MDT,M3.2.0,M11.1.0",diy_timezone_posix("America/Denver"));
     TEST_ASSERT_EQUAL_STRING("MST7",diy_timezone_posix("America/Phoenix"));
@@ -448,6 +465,7 @@ void app_main(void)
     RUN_TEST(test_monitoring_modes_do_not_require_output_relays);
     RUN_TEST(test_fractional_gpio_is_rejected_without_mutating_saved_profile);
     RUN_TEST(test_inventory_flags_reject_non_boolean_values);
+    RUN_TEST(test_controller_pump_requires_assigned_relay);
     RUN_TEST(test_disabled_circuit_does_not_require_an_output_assignment);
     RUN_TEST(test_generator_start_stop_actions_are_simulated);
     RUN_TEST(test_hvac_setpoint_rejects_unsafe_range);

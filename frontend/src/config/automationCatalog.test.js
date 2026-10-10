@@ -27,3 +27,15 @@ test('water heater rules select each installed heating or recirculation output i
   profile.waterHeaters[0].controlMode = 'monitor-only'
   assert.ok(!controlSystems(profile).some(item => item.category === 'Water Heaters'))
 })
+
+test('generic relay actions require an assigned output', () => {
+  const profile = structuredClone(demoProfile)
+  for (const section of ['waterPumps', 'customIo', 'inverters', 'acBreakers', 'dcCircuits']) {
+    profile[section] = [{id:section,label:section,enabled:true,controlMode:'controller',controllable:true,relay:-1}]
+    assert.ok(!controlSystems(profile).some(item => item.id === `device.${section}.${section}`))
+    profile[section][0].relay = 7
+    assert.ok(controlSystems(profile).some(item => item.id === `device.${section}.${section}`))
+    profile[section][0].relay = undefined
+    assert.ok(!controlSystems(profile).some(item => item.id === `device.${section}.${section}`))
+  }
+})

@@ -89,12 +89,12 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
   runtime. Temperature-based alerts run in a background task. Physical equipment
   drivers, other source values, time synchronization and hardware bench checks
   remain incomplete; equipment prototype simulation is labeled explicitly.
-- The frontend suite currently contains 42 passing tests, including malformed
+- The frontend suite currently contains 43 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
-  contain 19 passing tests including boolean flag validation, rule identity retention, disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
+  contain 20 passing tests including assigned pump outputs, boolean flag validation, rule identity retention, disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
   failed-execution retries. ESP32-S3 integration build passed: 77,872 bytes static
-  RAM and 992,013 bytes application flash. Runtime headroom and hardware operation
+  RAM and 992,141 bytes application flash. Runtime headroom and hardware operation
   still need bench verification.
 
 The active goal remains open until the remaining runtime/menu gaps and GitHub
@@ -192,3 +192,5 @@ Configuration text limits now use UTF-8 byte lengths, matching firmware storage:
 Optional inventory text fields now receive type and UTF-8 storage-bound validation before sensor processing, including bus/sensor references, protocols, gateway names and camera URLs. Imported null, numeric, object and oversized text values are rejected with field-specific errors. All 41 frontend tests and the production build pass.
 
 Inventory control and security flags now require JSON booleans in both setup and firmware. Strings such as 'false', numbers and null are rejected instead of being interpreted inconsistently. Firmware tests confirm rejected flags preserve the saved profile. All 42 frontend tests, 19 firmware host tests, frontend production build and ESP32-S3 integration build pass. No physical board has been commissioned.
+
+Generic relay automation actions now require a concrete assigned relay. Setup and firmware reject enabled controller-managed pumps/custom I/O and relay-managed power devices without an output. Existing rule targets become unavailable when their relay assignment is removed, through the existing current-catalog runtime check. All 43 frontend tests, 20 firmware host tests and both builds pass. Protocol-controlled equipment requires a separate implemented capability rather than an unassigned generic relay action.

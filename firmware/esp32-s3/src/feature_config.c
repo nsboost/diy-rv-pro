@@ -230,6 +230,16 @@ static bool validate_basic_item(const cJSON *item, char *error, size_t error_len
            optional_relay(item, "recircPumpRelay", error, error_len);
 }
 
+static bool validate_relay_device(const cJSON *item, char *error, size_t error_len)
+{
+    if (!validate_basic_item(item, error, error_len)) return false;
+    if (is_enabled(item) && string_equals(item, "controlMode", "controller") && !has_configured_relay(item, "relay")) {
+        set_error(error, error_len, "Controller-managed device requires a relay");
+        return false;
+    }
+    return true;
+}
+
 static bool validate_hvac_zone(const cJSON *zone, char *error, size_t error_len)
 {
     if (!validate_basic_item(zone, error, error_len) ||
@@ -328,7 +338,7 @@ static bool validate_breaker(const cJSON *breaker, char *error, size_t error_len
 
 static bool validate_power_device(const cJSON *device, char *error, size_t error_len)
 {
-    if (!validate_basic_item(device, error, error_len) ||
+    if (!validate_relay_device(device, error, error_len) ||
         !optional_int_range(device, "maxCurrentA", 0, 500, error, error_len) ||
         !optional_int_range(device, "capacityAh", 0, 2000, error, error_len)) {
         return false;
@@ -473,13 +483,13 @@ static bool validate_profile_json(const cJSON *root, char *error, size_t error_l
            validate_array_items(root, "dcCircuits", validate_breaker, error, error_len) &&
            validate_array_items(root, "waterTanks", validate_tank, error, error_len) &&
            validate_array_items(root, "waterHeaters", validate_water_heater, error, error_len) &&
-           validate_array_items(root, "waterPumps", validate_basic_item, error, error_len) &&
+           validate_array_items(root, "waterPumps", validate_relay_device, error, error_len) &&
            validate_array_items(root, "propaneSystems", validate_basic_item, error, error_len) &&
            validate_array_items(root, "weatherStations", validate_basic_item, error, error_len) &&
            validate_array_items(root, "cameras", validate_camera, error, error_len) &&
            validate_array_items(root, "securityZones", validate_security_zone, error, error_len) &&
            validate_array_items(root, "securitySensors", validate_security_sensor, error, error_len) &&
-           validate_array_items(root, "customIo", validate_basic_item, error, error_len);
+           validate_array_items(root, "customIo", validate_relay_device, error, error_len);
 }
 
 void feature_config_defaults(diy_feature_config_t *features)
