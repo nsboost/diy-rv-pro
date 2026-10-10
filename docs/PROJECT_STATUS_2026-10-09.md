@@ -115,3 +115,9 @@ temperature sensor, matching bus and ROM identity case-insensitively for hex
 addresses. Host tests cover reversed discovery order, separate zone readings,
 stale samples, wrong buses, disabled sensors and pending input configuration.
 The integration rebuild for this source resolver is in progress.
+
+The automation editor now preserves unavailable source/target identifiers visibly
+in its selectors and explains removed or disabled equipment references. The live
+browser check confirmed an old solar/breaker rule could not be saved until its
+references were corrected. Delete failures are shown in the editor. Frontend
+tests (30) and the production build pass.

@@ -443,10 +443,10 @@ function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile }) {
     }))
   }
   const selectedActionSystem = getSystem(draft.action.target, systems)
-  const selectedActionCategory = draft.action.category || selectedActionSystem.category
+  const selectedActionCategory = selectedActionSystem.category
   const actionSystems = getSystemsForCategory(selectedActionCategory, systems)
   const selectedRestoreSystem = getSystem(draft.reverse.target || draft.action.target, systems)
-  const selectedRestoreCategory = draft.reverse.category || selectedRestoreSystem.category
+  const selectedRestoreCategory = selectedRestoreSystem.category
   const restoreSystems = getSystemsForCategory(selectedRestoreCategory, systems)
 
   const setActionCategory = category => {
@@ -506,6 +506,7 @@ function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile }) {
         } catch (error) { setError(error.message) }
       }}>
         {error && <p role="alert" className="configuration-issues">{error}</p>}
+        {(!sources.some(([id]) => id === draft.trigger.source) || selectedActionSystem.category === 'Unavailable' || draft.reverse.enabled && (!sources.some(([id]) => id === draft.reverse.source) || selectedRestoreSystem.category === 'Unavailable')) && <p role="status" className="configuration-issues">This rule references removed or disabled equipment. Select a configured source and action before saving.</p>}
         <div className="form-grid two">
           <Field label="Rule Name">
             <input value={draft.name} onChange={event => setRoot('name', event.target.value)} />
@@ -523,6 +524,7 @@ function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile }) {
           <div className="form-grid four">
             <Field label="Sensor / State">
               <select value={draft.trigger.source} onChange={event => setSource('trigger', event.target.value)}>
+                {!sources.some(([id]) => id === draft.trigger.source) && <option value={draft.trigger.source} disabled>Unavailable: {draft.trigger.source}</option>}
                 {sources.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </Field>
@@ -548,16 +550,19 @@ function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile }) {
           <div className="form-grid action-grid">
             <Field label="Equipment Group">
               <select value={selectedActionCategory} onChange={event => setActionCategory(event.target.value)}>
+                {selectedActionCategory === 'Unavailable' && <option value="Unavailable" disabled>Unavailable equipment</option>}
                 {automationCategories.map(category => <option key={category} value={category}>{category}</option>)}
               </select>
             </Field>
             <Field label="Equipment / Circuit">
               <select value={draft.action.target} onChange={event => setActionTarget(event.target.value)}>
+                {selectedActionSystem.category === 'Unavailable' && <option value={draft.action.target} disabled>{selectedActionSystem.label}</option>}
                 {actionSystems.map(system => <option key={system.id} value={system.id}>{system.label}</option>)}
               </select>
             </Field>
             <Field label="Desired State / Change">
               <select value={draft.action.command} onChange={event => setActionCommand(event.target.value)}>
+                {!selectedActionSystem.commands.includes(draft.action.command) && <option value={draft.action.command} disabled>Unavailable: {draft.action.command}</option>}
                 {selectedActionSystem.commands.map(commandId => {
                   const command = getCommand(commandId)
                   return <option key={command.id} value={command.id}>{command.label}</option>
@@ -586,6 +591,7 @@ function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile }) {
           <div className="form-grid restore-grid">
             <Field label="Sensor / State">
               <select value={draft.reverse.source} onChange={event => setGroup('reverse', 'source', event.target.value)}>
+                {!sources.some(([id]) => id === draft.reverse.source) && <option value={draft.reverse.source} disabled>Unavailable: {draft.reverse.source}</option>}
                 {sources.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </Field>
@@ -599,16 +605,19 @@ function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile }) {
             </Field>
             <Field label="Restore Group">
               <select value={selectedRestoreCategory} onChange={event => setRestoreCategory(event.target.value)}>
+                {selectedRestoreCategory === 'Unavailable' && <option value="Unavailable" disabled>Unavailable equipment</option>}
                 {automationCategories.map(category => <option key={category} value={category}>{category}</option>)}
               </select>
             </Field>
             <Field label="Restore Equipment">
               <select value={draft.reverse.target || draft.action.target} onChange={event => setRestoreTarget(event.target.value)}>
+                {selectedRestoreSystem.category === 'Unavailable' && <option value={selectedRestoreSystem.id} disabled>{selectedRestoreSystem.label}</option>}
                 {restoreSystems.map(system => <option key={system.id} value={system.id}>{system.label}</option>)}
               </select>
             </Field>
             <Field label="Restore State / Change">
               <select value={draft.reverse.command || selectedRestoreSystem.defaultCommand} onChange={event => setRestoreCommand(event.target.value)}>
+                {!selectedRestoreSystem.commands.includes(draft.reverse.command || selectedRestoreSystem.defaultCommand) && <option value={draft.reverse.command || selectedRestoreSystem.defaultCommand} disabled>Unavailable: {draft.reverse.command || selectedRestoreSystem.defaultCommand}</option>}
                 {selectedRestoreSystem.commands.map(commandId => {
                   const command = getCommand(commandId)
                   return <option key={command.id} value={command.id}>{command.label}</option>
@@ -622,7 +631,7 @@ function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile }) {
         </div>
 
         <div className="modal-actions split">
-          {rule && <button className="danger-action" type="button" onClick={() => onDelete(rule.id)}>Delete</button>}
+          {rule && <button className="danger-action" type="button" onClick={async () => {try {await onDelete(rule.id)} catch (error) {setError(error.message)}}}>Delete</button>}
           <span />
           <button className="secondary-action" type="button" onClick={onClose}>Cancel</button>
           <button className="primary-action" type="submit">Save Automation</button>
