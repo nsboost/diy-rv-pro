@@ -370,6 +370,7 @@ export default function SetupWizard({ initialProfile, onSave, onDiscover }) {
   const [selectedIndexes, setSelectedIndexes] = useState({})
   const [status, setStatus] = useState('')
   const [saving, setSaving] = useState(false)
+  const [dirty, setDirty] = useState(false)
   const [discovered, setDiscovered] = useState([])
   const [discovering, setDiscovering] = useState(false)
   const errors = useMemo(() => validateProfile(profile), [profile])
@@ -377,10 +378,14 @@ export default function SetupWizard({ initialProfile, onSave, onDiscover }) {
   const section = configuratorSections.find(item => item.id === activeSection) || configuratorSections[0]
 
   useEffect(() => {
-    setProfile(normalizeSystemProfile(initialProfile))
-  }, [initialProfile])
+    if (!dirty) setProfile(normalizeSystemProfile(initialProfile))
+  }, [initialProfile, dirty])
 
-  const updateProfile = updater => setProfile(current => normalizeSystemProfile(updater(structuredClone(current))))
+  const updateProfile = updater => {
+    if (saving) return
+    setDirty(true)
+    setProfile(current => normalizeSystemProfile(updater(structuredClone(current))))
+  }
 
   const addItem = sectionId => updateProfile(current => {
     if (current[sectionId].length >= sectionLimits[sectionId]) return current
@@ -408,6 +413,7 @@ export default function SetupWizard({ initialProfile, onSave, onDiscover }) {
     setStatus('Saving configuration...')
     try {
       const message = await onSave(profile)
+      setDirty(false)
       setStatus(message || 'Configuration saved')
     } catch (error) {
       setStatus(error.message || 'Configuration save failed')
@@ -441,7 +447,7 @@ export default function SetupWizard({ initialProfile, onSave, onDiscover }) {
             const imported = normalizeSystemProfile(raw)
             const issues = validateProfile(imported)
             if (issues.length) throw new Error(issues.join('; '))
-            setProfile(imported); setSelectedIndexes({}); setStatus('Imported for review. Save to apply.')
+            if (saving) return; setDirty(true); setProfile(imported); setSelectedIndexes({}); setStatus('Imported for review. Save to apply.')
           } catch (error) { setStatus(error.message) }
           event.target.value = ''
         }} /></label>
@@ -516,6 +522,7 @@ export default function SetupWizard({ initialProfile, onSave, onDiscover }) {
           <span key={label}>{label}: <strong>{enabled}/{total}</strong></span>
         ))}
       </div>
+      {dirty && <div className="configurator-status" role="status">Unsaved edits are preserved during controller refresh. <button type="button" className="secondary-action" disabled={saving} onClick={() => {setDirty(false);setSelectedIndexes({});setStatus('Reloaded current inventory. Unsaved edits discarded.')}}>Discard Edits and Reload</button></div>}
       {status && <div className="configurator-status" role="status">{status}</div>}
     </form>
   )
