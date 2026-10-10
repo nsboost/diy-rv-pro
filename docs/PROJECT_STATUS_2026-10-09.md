@@ -92,8 +92,8 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 - The frontend suite currently contains 30 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
-  contain 13 passing tests including clock comparisons, hold resets, recovery and
-  failed-execution retries. ESP32-S3 integration build passes: 76,416 bytes static
+  contain 14 passing tests including zone-to-sensor mapping, clock comparisons, hold resets, recovery and
+  failed-execution retries. Previous ESP32-S3 integration build passed: 76,416 bytes static
   RAM and 959,313 bytes application flash. Runtime headroom and hardware operation
   still need bench verification.
 
@@ -109,3 +109,9 @@ Wi-Fi station setup now attempts connection on startup and retries five seconds
 after disconnects or immediate connection errors. Settings reports running station
 status without exposing credentials. Access-point service stays enabled during
 station retries. Physical network connection/recovery testing remains pending.
+
+Firmware automation now resolves `hvac.<zoneId>.tempF` through the zone's assigned
+temperature sensor, matching bus and ROM identity case-insensitively for hex
+addresses. Host tests cover reversed discovery order, separate zone readings,
+stale samples, wrong buses, disabled sensors and pending input configuration.
+The integration rebuild for this source resolver is in progress.

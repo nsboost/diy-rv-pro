@@ -1,4 +1,5 @@
 #include "automation_engine.h"
+#include "automation_sources.h"
 #include <string.h>
 
 #include "feature_config.h"
@@ -263,6 +264,38 @@ static void test_automation_hold_fault_reset_restore_and_retry(void) {
     TEST_ASSERT_EQUAL(3,executions); TEST_ASSERT_TRUE(last_restoring); TEST_ASSERT_FALSE(engine.rules[0].active);
     automation_engine_reset(&engine); cJSON_Delete(rules); cJSON_Delete(sources);
 }
+static void test_automation_zone_sources_follow_addressed_sensor(void) {
+    cJSON *profile=cJSON_Parse("{\"temperatureZones\":[{\"id\":\"living\",\"enabled\":true,\"sensorType\":\"ds18b20\",\"address\":\"2801000000000029\",\"busId\":\"bus\"},{\"id\":\"bedroom\",\"enabled\":true,\"sensorType\":\"ds18b20\",\"address\":\"2802000000000070\",\"busId\":\"bus\"}],\"hvacZones\":[{\"id\":\"zone1\",\"enabled\":true,\"temperatureSensorId\":\"living\"},{\"id\":\"zone2\",\"enabled\":true,\"temperatureSensorId\":\"bedroom\"}]}");
+    cJSON *devices=cJSON_Parse("{\"devices\":[{\"address\":\"2802000000000070\",\"busId\":\"bus\",\"status\":\"ok\",\"ageMs\":0,\"tempF\":70},{\"address\":\"2801000000000029\",\"busId\":\"bus\",\"status\":\"ok\",\"ageMs\":0,\"tempF\":72}]}");
+    cJSON *living=cJSON_GetArrayItem(cJSON_GetObjectItemCaseSensitive(profile,"temperatureZones"),0);
+    cJSON *living_device=cJSON_GetArrayItem(cJSON_GetObjectItemCaseSensitive(devices,"devices"),1);
+    cJSON_ReplaceItemInObjectCaseSensitive(living,"address",cJSON_CreateString("28ABCDEF000000A7"));
+    cJSON_ReplaceItemInObjectCaseSensitive(living_device,"address",cJSON_CreateString("28abcdef000000a7"));
+    cJSON *sources=automation_temperature_sources(profile,devices,false);
+    TEST_ASSERT_TRUE(cJSON_GetObjectItemCaseSensitive(sources,"hvac.zone1.tempF")->valuedouble == 72);
+    TEST_ASSERT_TRUE(cJSON_GetObjectItemCaseSensitive(sources,"hvac.zone2.tempF")->valuedouble == 70);
+    cJSON_Delete(sources);
+    cJSON *bedroom=cJSON_GetArrayItem(cJSON_GetObjectItemCaseSensitive(devices,"devices"),0);
+    cJSON_ReplaceItemInObjectCaseSensitive(bedroom,"ageMs",cJSON_CreateNumber(30001));
+    sources=automation_temperature_sources(profile,devices,false);
+    TEST_ASSERT_TRUE(cJSON_IsNull(cJSON_GetObjectItemCaseSensitive(sources,"hvac.zone2.tempF")));
+    cJSON_Delete(sources);
+    cJSON_ReplaceItemInObjectCaseSensitive(bedroom,"ageMs",cJSON_CreateNumber(0));
+    cJSON_ReplaceItemInObjectCaseSensitive(bedroom,"busId",cJSON_CreateString("other-bus"));
+    sources=automation_temperature_sources(profile,devices,false);
+    TEST_ASSERT_TRUE(cJSON_IsNull(cJSON_GetObjectItemCaseSensitive(sources,"temperature.bedroom.tempF")));
+    cJSON_Delete(sources);
+    cJSON_ReplaceItemInObjectCaseSensitive(bedroom,"busId",cJSON_CreateString("bus"));
+    cJSON *sensor=cJSON_GetArrayItem(cJSON_GetObjectItemCaseSensitive(profile,"temperatureZones"),1);
+    cJSON_ReplaceItemInObjectCaseSensitive(sensor,"enabled",cJSON_CreateBool(false));
+    sources=automation_temperature_sources(profile,devices,false);
+    TEST_ASSERT_NULL(cJSON_GetObjectItemCaseSensitive(sources,"temperature.bedroom.tempF"));
+    TEST_ASSERT_TRUE(cJSON_IsNull(cJSON_GetObjectItemCaseSensitive(sources,"hvac.zone2.tempF")));
+    cJSON_Delete(sources);
+    sources=automation_temperature_sources(profile,devices,true);
+    TEST_ASSERT_EQUAL(0,cJSON_GetArraySize(sources));
+    cJSON_Delete(sources); cJSON_Delete(profile); cJSON_Delete(devices);
+}
 static void test_automation_clock_comparisons(void) {
     char error[96]; cJSON *rules=temperature_rules();
     cJSON *rule=cJSON_GetArrayItem(rules,0), *trigger=cJSON_GetObjectItemCaseSensitive(rule,"trigger");
@@ -306,6 +339,7 @@ void app_main(void)
     RUN_TEST(test_automation_hold_fault_reset_restore_and_retry);
     RUN_TEST(test_automation_rejects_invalid_rules);
     RUN_TEST(test_automation_clock_comparisons);
+    RUN_TEST(test_automation_zone_sources_follow_addressed_sensor);
     RUN_TEST(test_addressed_temperature_inventory);
     RUN_TEST(test_contact_filter_requires_stable_samples);
     RUN_TEST(test_duplicate_and_missing_device_ids_are_rejected);

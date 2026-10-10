@@ -5,6 +5,7 @@ idf_component_register(
     "feature_config.c"
     "sensor_validation.c"
         "automation_engine.c"
+        "automation_sources.c"
         "automation_runtime.c"
     "main.c"
     "mock_telemetry.c"

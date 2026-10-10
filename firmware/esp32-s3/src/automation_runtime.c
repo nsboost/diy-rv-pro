@@ -1,5 +1,6 @@
 #include "automation_runtime.h"
 #include "automation_engine.h"
+#include "automation_sources.h"
 #include "esp_log.h"
 #include "esp_random.h"
 #include "esp_timer.h"
@@ -111,38 +112,9 @@ static bool execute(const cJSON *rule, const cJSON *action, bool restoring,
   return false;
 }
 static cJSON *source_values(void) {
-  cJSON *sources = cJSON_CreateObject(),
-        *devices = temperature_inputs_to_json();
-  const cJSON *sensors =
-                  cJSON_GetObjectItemCaseSensitive(profile, "temperatureZones"),
-              *sensor;
-  if (inputs_pending) {
-    cJSON_Delete(devices);
-    return sources;
-  }
-  cJSON_ArrayForEach(sensor, sensors) {
-    if (!cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(sensor, "enabled")))
-      continue;
-    char key[128];
-    snprintf(key, sizeof(key), "temperature.%s.tempF", text(sensor, "id"));
-    const cJSON *reading = NULL, *device;
-    cJSON_ArrayForEach(device,
-                       cJSON_GetObjectItemCaseSensitive(devices, "devices")) {
-      if (!strcmp(text(device, "address"), text(sensor, "address")) &&
-          !strcmp(text(device, "busId"), text(sensor, "busId"))) {
-        reading = device;
-        break;
-      }
-    }
-    const cJSON *age = cJSON_GetObjectItemCaseSensitive(reading, "ageMs"),
-                *value = cJSON_GetObjectItemCaseSensitive(reading, "tempF");
-    if (!strcmp(text(reading, "status"), "ok") && cJSON_IsNumber(age) &&
-        age->valuedouble >= 0 && age->valuedouble <= 30000 &&
-        cJSON_IsNumber(value))
-      cJSON_AddNumberToObject(sources, key, value->valuedouble);
-    else
-      cJSON_AddNullToObject(sources, key);
-  }
+  cJSON *devices = temperature_inputs_to_json();
+  cJSON *sources =
+      automation_temperature_sources(profile, devices, inputs_pending);
   cJSON_Delete(devices);
   return sources;
 }

@@ -255,7 +255,11 @@ restarts after a reboot or rule edit. An action latches only after execution
 succeeds; failures retry after 30 seconds. Reverse checks execute once per
 successful activation.
 
-Implemented device source values currently cover registered DS18B20 sensors.
+Implemented device source values currently cover registered DS18B20 sensors and
+HVAC zone temperatures resolved through each zone's `temperatureSensorId`.
+Both paths require the exact registered bus/address and a healthy sample no more
+than 30 seconds old. Disabled sensors and pending bus changes yield unavailable
+values; discovery order never assigns a zone's sensor.
 Other configured sources remain unavailable until their drivers and time
 synchronization are integrated. The browser demo evaluates its explicitly
 simulated telemetry and time sources. Controller equipment automation currently
