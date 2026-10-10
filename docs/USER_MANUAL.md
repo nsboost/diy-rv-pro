@@ -100,8 +100,11 @@ temperature/contact inputs cannot satisfy their conditions.
 
 The browser demo evaluates and persists rules and alert activation. Firmware
 contains a persistent rule store and an alert runtime using addressed
-temperatures and local contacts. Physical equipment actions, the complete
-source set and reboot activation behavior remain unfinished. Do not rely on
+temperatures and local contacts. Its version-2 NVS record stores successful
+activation with notifications and restores activation after startup; hold and
+retry timers start fresh. Version-1 records remain readable without inventing
+past activation. Physical reboot and interrupted-write tests are still pending.
+Physical equipment actions and the complete source set remain unfinished. Do not rely on
 this engineering release for installed HVAC, generator or protection control.
 Save/delete dialogs stay open until an outstanding operation finishes.
 

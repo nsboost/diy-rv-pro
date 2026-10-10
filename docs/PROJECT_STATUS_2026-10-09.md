@@ -5,15 +5,17 @@ This document records the initial review. The implementation update below supers
 ## Latest verified state - October 10, 2026
 
 - Local frontend: 91 tests pass; production build passes. Bundle size warning remains.
-- Local firmware: 24 host tests pass; ESP32-S3 build passes at 25014d2.
-  Static RAM is 77,872 bytes; application flash is 994,601 bytes.
-- GitHub CI run [38047849097](https://github.com/nsboost/diy-rv-pro/actions/runs/38047849097)
-  for 25014d2: frontend succeeded; firmware and Windows host tests were still running at inspection.
+- Local firmware: 27 host tests pass; ESP32-S3 build passes at d70fffc.
+  Static RAM is 77,872 bytes; application flash is 995,769 bytes.
+- GitHub CI run [38087394283](https://github.com/nsboost/diy-rv-pro/actions/runs/38087394283)
+  for d70fffc: frontend succeeded; firmware and Windows host tests were still running at inspection.
 - Addressed temperatures and contact sources are connected to automation logic.
   Contact comparisons now agree between editor validation and firmware execution.
 - Hardware equipment actions still lack commissioned output drivers. HVAC/generator
-  state machines, other physical source drivers, reboot activation persistence,
+  state machines, other physical source drivers, physical reboot/power-loss verification,
   and full live-controller browser/fault verification remain incomplete.
+- Firmware version-2 NVS stores alert activation with notifications and restores
+  activation at startup; host tests cover versions and recovery, not physical NVS faults.
 - Notification delivery is in-app and browser only; browser delivery requires
   permission and an open dashboard. No background push service is implemented.
 - Open completion gates: [Automation and menu audit](AUTOMATION_MENU_COMPLETION.md).

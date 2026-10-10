@@ -1,8 +1,8 @@
 # Automation, notifications and configuration completion audit
 
-Audited October 10, 2026 against code revision `25014d2`. This is an open
+Audited October 10, 2026; refreshed against code revision `d70fffc`. This is an open
 acceptance checklist, not a completion claim. Local baseline: 91 frontend
-regressions and production build passed; 24 firmware host tests and ESP32-S3
+regressions and production build passed; 27 firmware host tests and ESP32-S3
 build passed. Physical-controller behavior remains unverified.
 
 | Requirement | Current evidence | Remaining acceptance work |
@@ -16,14 +16,15 @@ build passed. Physical-controller behavior remains unverified.
 
 ## Remaining implementation and verification
 
-- [ ] Persist successful alert activation together with its notification in one
-  NVS state transaction. Version-2 runtime storage now saves activation with notifications and restores
+- [ ] Verify physical reboot and interrupted-write behavior for successful alert
+  activation and its notification in one NVS state transaction. Version-2 runtime storage now saves activation with notifications and restores
   it at startup; host tests cover validation and fresh-engine behavior. Physical
   NVS transactions and interrupted-write behavior still need verification. A steady condition
   must not send another alert solely because the controller restarts. Restore
   actions, rule edits/deletion, old-state migration and failed writes need tests.
-- [ ] Keep monotonic hold/retry timers separate from persisted activation. A saved
-  uptime must not be reused as a new boot's clock. Verify source-unavailable boot,
+- [ ] Verify on-device that hold/retry timers start fresh after reboot. The
+  activation-only restore helpers exclude timers and previous samples, with host
+  regression coverage; saved uptime is not reused as a new boot clock. Verify source-unavailable boot,
   later recovery and restored conditions before declaring reboot behavior done.
 - [ ] Integrate physical power, tank and generator sources with explicit freshness
   and fault states. `source_values` currently supplies addressed temperatures,
