@@ -9,6 +9,7 @@
 #include "freertos/task.h"
 #include "nvs.h"
 #include "temperature_inputs.h"
+#include "wifi_manager.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -115,6 +116,8 @@ static cJSON *source_values(void) {
   cJSON *devices = temperature_inputs_to_json();
   cJSON *sources =
       automation_temperature_sources(profile, devices, inputs_pending);
+  int minute = wifi_manager_local_minute();
+  if (sources && minute >= 0) cJSON_AddNumberToObject(sources, "time.local", minute);
   cJSON_Delete(devices);
   return sources;
 }

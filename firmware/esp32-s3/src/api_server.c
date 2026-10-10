@@ -13,6 +13,7 @@
 #include "temperature_inputs.h"
 #include "static_files.h"
 #include "wifi_manager.h"
+#include "timezone_lookup.h"
 #include "cJSON.h"
 
 static const char *TAG = "api_server";
@@ -74,6 +75,7 @@ static esp_err_t status_handler(httpd_req_t *request)
     cJSON_AddStringToObject(root, "firmware", "v1.2.7");
     cJSON_AddStringToObject(root, "target", "esp32-s3");
     cJSON_AddStringToObject(root, "stationStatus", wifi_manager_station_status());
+    cJSON_AddStringToObject(root, "clockStatus", wifi_manager_local_minute() >= 0 ? "synchronized" : "unavailable");
     return send_json(request, root, 200);
 }
 
@@ -205,6 +207,12 @@ static esp_err_t config_put_handler(httpd_req_t *request)
         strlcpy(candidate->station_password, station_password->valuestring, sizeof(candidate->station_password));
     }
     if (cJSON_IsString(timezone)) {
+        if (strlen(timezone->valuestring) >= sizeof(candidate->timezone) ||
+            !diy_timezone_posix(timezone->valuestring)) {
+            free(candidate);
+            cJSON_Delete(json);
+            return httpd_resp_send_err(request, HTTPD_400_BAD_REQUEST, "Choose a supported IANA time zone");
+        }
         strlcpy(candidate->timezone, timezone->valuestring, sizeof(candidate->timezone));
     }
     if (features != NULL) {

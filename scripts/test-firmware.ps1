@@ -24,6 +24,7 @@ $sources = @(
     (Join-Path $firmware 'src\sensor_validation.c'),
     (Join-Path $firmware 'src\automation_engine.c'),
     (Join-Path $firmware 'src\automation_sources.c'),
+    (Join-Path $firmware 'src\timezone_lookup.c'),
     (Join-Path $firmware 'src\contact_filter.c'),
     (Join-Path $firmware 'src\mock_telemetry.c'),
     (Join-Path $cjson 'cJSON.c'),

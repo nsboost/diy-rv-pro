@@ -15,6 +15,7 @@ idf_component_register(
     "contact_filter.c"
     "static_files.c"
     "wifi_manager.c"
+    "timezone_lookup.c"
   INCLUDE_DIRS "."
   REQUIRES
     esp_http_server
@@ -25,6 +26,7 @@ idf_component_register(
     spiffs
     esp_driver_gpio
     esp_timer
+    esp_netif
 )
 
 # Catch large automatic buffers before they overflow the HTTP task stack.

@@ -7,6 +7,8 @@ The ESP32-S3 serves the dashboard and local JSON API over the device access poin
 - `GET /api/status`: device status, setup state, firmware version, target, and
   `stationStatus` (`disabled`, `connecting`, or `connected`). Station status reflects
   the running network configuration; saved network changes require a restart.
+  `clockStatus` is `synchronized` or `unavailable`; local scheduled rules require
+  synchronized network time and a supported configured IANA zone.
 - `GET /api/telemetry`: authenticated snapshot, rules and persisted notifications. Equipment telemetry is explicitly marked `controller.equipmentMode: "prototype-simulation"`.
 - `GET /api/config`: sanitized configuration, including the saved RV feature profile. Requires authorization after setup.
 - `PUT /api/config`: first-boot setup and subsequent configuration updates.
@@ -260,8 +262,14 @@ HVAC zone temperatures resolved through each zone's `temperatureSensorId`.
 Both paths require the exact registered bus/address and a healthy sample no more
 than 30 seconds old. Disabled sensors and pending bus changes yield unavailable
 values; discovery order never assigns a zone's sensor.
-Other configured sources remain unavailable until their drivers and time
-synchronization are integrated. The browser demo evaluates its explicitly
+`time.local` becomes available after SNTP synchronizes through station Wi-Fi.
+The configured IANA zone is converted using generated tzdata 2026.5 / IANA 2026e
+recurring rules. Unknown zones are rejected when saving; an old unsupported zone
+leaves schedules unavailable. Changes require a restart. AP-only startup has no
+network clock and schedules wait; after synchronization the clock continues
+through temporary network outages. The SNTP server is `pool.ntp.org`.
+Other configured sources remain unavailable until their drivers are integrated.
+The browser demo evaluates its explicitly
 simulated telemetry and time sources. Controller equipment automation currently
 reports an uncommissioned driver and retains the pending action; it does not
 claim that a physical output switched. Completing those drivers remains an

@@ -1,5 +1,6 @@
 #include "automation_engine.h"
 #include "automation_sources.h"
+#include "timezone_lookup.h"
 #include <string.h>
 
 #include "feature_config.h"
@@ -296,6 +297,13 @@ static void test_automation_zone_sources_follow_addressed_sensor(void) {
     TEST_ASSERT_EQUAL(0,cJSON_GetArraySize(sources));
     cJSON_Delete(sources); cJSON_Delete(profile); cJSON_Delete(devices);
 }
+static void test_timezone_rules_preserve_dst_and_reject_unknown_zones(void) {
+    TEST_ASSERT_EQUAL_STRING("MST7MDT,M3.2.0,M11.1.0",diy_timezone_posix("America/Denver"));
+    TEST_ASSERT_EQUAL_STRING("MST7",diy_timezone_posix("America/Phoenix"));
+    TEST_ASSERT_EQUAL_STRING("UTC0",diy_timezone_posix("UTC"));
+    TEST_ASSERT_NULL(diy_timezone_posix("Invalid/Zone"));
+    TEST_ASSERT_NULL(diy_timezone_posix(NULL));
+}
 static void test_saved_notifications_reject_corrupt_payloads(void) {
     char error[96];
     cJSON *state=cJSON_Parse("{\"version\":1,\"rules\":[],\"notifications\":[{\"id\":\"alert-1\",\"message\":\"Bedroom warm\",\"ruleId\":\"rule-1\",\"severity\":\"info\",\"read\":false,\"uptimeMs\":1000}]}");
@@ -362,6 +370,7 @@ void app_main(void)
     RUN_TEST(test_automation_clock_comparisons);
     RUN_TEST(test_automation_zone_sources_follow_addressed_sensor);
     RUN_TEST(test_saved_notifications_reject_corrupt_payloads);
+    RUN_TEST(test_timezone_rules_preserve_dst_and_reject_unknown_zones);
     RUN_TEST(test_addressed_temperature_inventory);
     RUN_TEST(test_contact_filter_requires_stable_samples);
     RUN_TEST(test_duplicate_and_missing_device_ids_are_rejected);

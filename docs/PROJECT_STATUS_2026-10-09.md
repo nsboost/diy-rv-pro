@@ -92,7 +92,7 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 - The frontend suite currently contains 30 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
-  contain 15 passing tests including saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
+  contain 16 passing tests including time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
   failed-execution retries. ESP32-S3 integration build passed: 76,416 bytes static
   RAM and 960,425 bytes application flash. Runtime headroom and hardware operation
   still need bench verification.
@@ -105,6 +105,11 @@ Controller Settings now includes connection, session-token storage, optional bro
 
 The firmware clock comparison syntax now matches the browser (`HH:MM`). Clock
 sources still require synchronization before schedules can run on the controller.
+The SNTP synchronization path and generated 598-zone IANA lookup are now
+implemented, with unknown time zones rejected and unsynchronized schedules
+remaining unavailable. Settings displays clock readiness. The generator script
+pins tzdata 2026.5 (IANA 2026e); no generator dependency is required for ordinary
+firmware builds. The integration rebuild and physical clock test remain pending.
 Wi-Fi station setup now attempts connection on startup and retries five seconds
 after disconnects or immediate connection errors. Settings reports running station
 status without exposing credentials. Access-point service stays enabled during
