@@ -1,7 +1,8 @@
+import { defaultSystemProfile } from '../config/systemProfile.js'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { applyControlAction, createLocalController } from './telemetryClient.js'
+import { applyControlAction, createLocalController, fetchConfig } from './telemetryClient.js'
 import { cloneTelemetry } from '../data/mockTelemetry.js'
 
 test('generator control actions mutate simulated state only', () => {
@@ -207,4 +208,17 @@ test('local controller notifies subscribers after dispatch', () => {
   controller.dispatch({ type: 'automation.setEnabled', id: 'quiet-hours', enabled: false })
 
   assert.equal(notifications, 2)
+})
+
+test('controller configuration reads reject missing or malformed inventories before normalization', async () => {
+  const original = globalThis.fetch
+  let payload = {setupComplete:true,features:structuredClone(defaultSystemProfile)}
+  globalThis.fetch = async () => ({ok:true,json:async()=>payload})
+  try {
+    assert.equal((await fetchConfig('test')).features.schemaVersion,1)
+    for (const invalid of [{setupComplete:true},{setupComplete:'true',features:defaultSystemProfile},{setupComplete:true,features:{...defaultSystemProfile,hvacZones:'bad'}}]) {
+      payload = invalid
+      await assert.rejects(fetchConfig('test'), /invalid configuration/)
+    }
+  } finally {globalThis.fetch = original}
 })

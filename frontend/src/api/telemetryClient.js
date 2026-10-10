@@ -567,6 +567,7 @@ export async function fetchConfig(token) {
   }
 
   const config = await requestControllerJson(CONFIG_ENDPOINT, { headers })
+  if (!config || typeof config.setupComplete !== 'boolean' || config.features?.schemaVersion !== 1 || validateProfile(config.features).length) throw new Error('Controller returned an invalid configuration. Verify firmware compatibility before continuing.')
   return { ...config, features: normalizeSystemProfile(config.features) }
 }
 
