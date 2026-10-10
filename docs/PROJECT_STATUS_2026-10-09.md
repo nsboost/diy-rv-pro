@@ -4,11 +4,11 @@ This document records the initial review. The implementation update below supers
 
 ## Latest verified state - October 10, 2026
 
-- Local frontend: 76 tests pass; production build passes. Bundle size warning remains.
-- Local firmware: 23 host tests pass; ESP32-S3 build passes at a7cb450.
-  Static RAM is 77,872 bytes; application flash is 993,657 bytes.
-- GitHub CI run [38046143804](https://github.com/nsboost/diy-rv-pro/actions/runs/38046143804)
-  for a7cb450: frontend succeeded; firmware and Windows host tests were still running at inspection.
+- Local frontend: 91 tests pass; production build passes. Bundle size warning remains.
+- Local firmware: 24 host tests pass; ESP32-S3 build passes at 25014d2.
+  Static RAM is 77,872 bytes; application flash is 994,601 bytes.
+- GitHub CI run [38047849097](https://github.com/nsboost/diy-rv-pro/actions/runs/38047849097)
+  for 25014d2: frontend succeeded; firmware and Windows host tests were still running at inspection.
 - Addressed temperatures and contact sources are connected to automation logic.
   Contact comparisons now agree between editor validation and firmware execution.
 - Hardware equipment actions still lack commissioned output drivers. HVAC/generator
@@ -16,6 +16,7 @@ This document records the initial review. The implementation update below supers
   and full live-controller browser/fault verification remain incomplete.
 - Notification delivery is in-app and browser only; browser delivery requires
   permission and an open dashboard. No background push service is implemented.
+- Open completion gates: [Automation and menu audit](AUTOMATION_MENU_COMPLETION.md).
 - The folder review below is the historical October 9 snapshot, not current Git state.
 
 ## Overall state
