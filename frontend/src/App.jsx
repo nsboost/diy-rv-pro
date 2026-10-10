@@ -977,6 +977,10 @@ export default function App() {
             snapshot.temperatures = devices.flatMap(device => config.features.temperatureZones.filter(sensor => sensor.busId === device.busId && sensor.address?.toLowerCase() === device.address?.toLowerCase()).map(sensor => ({...device, id: sensor.id, sampledAt: Date.now() - device.ageMs})))
           }
         }
+        if (token) {
+          const contacts = await requestControllerJson('/api/security/inputs', {headers:{Authorization:`Bearer ${token}`}}).catch(() => null)
+          snapshot.securityInputs = Array.isArray(contacts?.sensors) ? contacts.sensors.map(sensor => ({...sensor,sampledAt:Date.now()})) : []
+        }
         if (!cancelled) {
           setTelemetry({ ...snapshot, controller: { ...snapshot.controller, mode: 'device', online: true } })
           setApiOnline(true)

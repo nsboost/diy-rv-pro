@@ -27,6 +27,7 @@ export function controlSystems(profile) {
 
 export function sourceCatalog(profile) {
   const sources = [['time.local', 'Local Time'], ...temperatureSources(profile)]
+  for (const sensor of (profile.securitySensors || []).filter(item => item.enabled)) sources.push([`security.${sensor.id}.active`, `${sensor.label} Active`])
   const enabled = section => (profile[section] || []).some(item => item.enabled)
   if (enabled('batteries')) sources.push(['battery.voltage','Battery Voltage'], ['battery.stateOfCharge','Battery State of Charge'])
   if (enabled('solarChargeControllers')) sources.push(['solar.watts','Solar Generation Watts'], ['solar.voltage','Solar Array Voltage'])

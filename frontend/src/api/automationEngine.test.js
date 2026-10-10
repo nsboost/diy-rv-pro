@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { evaluateRules, durationMs, compareCondition, validateCondition } from './automationEngine.js'
+import { evaluateRules, durationMs, compareCondition, validateCondition, readAutomationSource } from './automationEngine.js'
 import { createLocalController, normalizeAutomationRule } from './telemetryClient.js'
 import { demoProfile, demoReadings } from '../data/demoProfile.js'
 import { cloneTelemetry } from '../data/mockTelemetry.js'
@@ -356,4 +356,13 @@ test('controller notification preferences roll back when persistence fails', () 
   assert.deepEqual(controller.getTelemetry().notificationSettings,{inApp:false,desktop:false})
   controller.setNotificationSettings({inApp:true},{persistSettings:false})
   assert.deepEqual(controller.getTelemetry().notificationSettings,{inApp:true,desktop:false})
+})
+
+test('security contact sources preserve false and reject stale or unhealthy readings',()=>{
+  const telemetry = {securityInputs:[{id:'door',active:false,status:'ok',sampledAt:1000}]}
+  assert.equal(readAutomationSource(telemetry,'security.door.active',2000),false)
+  assert.equal(readAutomationSource(telemetry,'security.door.active',12000),undefined)
+  assert.equal(readAutomationSource(telemetry,'security.missing.active',2000),undefined)
+  telemetry.securityInputs[0].status = 'stale'
+  assert.equal(readAutomationSource(telemetry,'security.door.active',2000),undefined)
 })

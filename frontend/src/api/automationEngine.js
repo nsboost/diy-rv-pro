@@ -68,6 +68,10 @@ export function readAutomationSource(telemetry, source, now) {
   if (source === 'time.local' && Number.isFinite(telemetry.localMinute)) return telemetry.localMinute
   if (source === 'time.local') { const time = new Date(now); return time.getHours() * 60 + time.getMinutes() }
   const parts = source.split('.')
+  if (parts[0] === 'security') {
+    const reading = telemetry.securityInputs?.find(sensor => sensor.id === parts[1])
+    return parts[2] === 'active' && reading?.status === 'ok' && typeof reading.active === 'boolean' && Number.isFinite(reading.sampledAt) && now >= reading.sampledAt && now - reading.sampledAt <= 10000 ? reading.active : undefined
+  }
   if (parts[0] === 'temperature') {
     const reading = telemetry.temperatures?.find(sensor => sensor.id === parts[1])
     return reading?.status === 'ok' && Number.isFinite(reading.sampledAt) && now >= reading.sampledAt && now - reading.sampledAt <= 30000 ? reading.tempF : undefined
