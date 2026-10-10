@@ -1,3 +1,4 @@
+import { mapDiscoveredTemperatures } from './api/mapDiscoveredTemperatures.js'
 import { sampledAtFromRequest } from './api/sensorFreshness.js'
 import { parseHvacSettingsDraft } from './config/hvacSettingsDraft.js'
 import { requestControllerJson } from './api/controllerRequest.js'
@@ -974,10 +975,7 @@ export default function App() {
           if (!cancelled) setSystemProfile(config.features)
           const discoveryStartedAt = Date.now()
           const discovery = await requestControllerJson('/api/temperature/devices', {headers: {Authorization: `Bearer ${token}`}}).catch(() => null)
-          if (discovery) {
-            const devices = discovery.devices
-            snapshot.temperatures = devices.flatMap(device => config.features.temperatureZones.filter(sensor => sensor.busId === device.busId && sensor.address?.toLowerCase() === device.address?.toLowerCase()).map(sensor => ({...device, id: sensor.id, sampledAt: sampledAtFromRequest(discoveryStartedAt, device.ageMs)})))
-          }
+          snapshot.temperatures = mapDiscoveredTemperatures(discovery?.devices, config.features.temperatureZones, discoveryStartedAt)
         }
         if (token) {
           const contactsStartedAt = Date.now()
