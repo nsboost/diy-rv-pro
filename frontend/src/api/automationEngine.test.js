@@ -107,3 +107,21 @@ test('successful sensor alert activation survives reload without duplicate deliv
   const snapshot = restored.tick(2000)
   assert.equal(snapshot.notifications.filter(item => item.ruleId === alertRule.id).length,1)
 })
+
+test('manual generator commands respect rules and disabled blocks clear immediately', () => {
+  const controller = createLocalController(cloneTelemetry(), {initialProfile:demoProfile})
+  controller.dispatch({type:'automation.upsert',rule:{id:'block-manual',name:'Block manual starts',enabled:true,trigger:{source:'battery.voltage',operator:'>',value:'0',holdFor:'0 sec'},action:{type:'block',target:'generator',command:'blockOn'},reverse:{enabled:false}}})
+  controller.tick()
+  assert.throws(() => controller.dispatch({type:'generator.start'}), /blocking rule/)
+  controller.dispatch({type:'automation.setEnabled',id:'block-manual',enabled:false})
+  assert.equal(controller.dispatch({type:'generator.start'}).generator.running,true)
+})
+
+test('manual HVAC cannot activate unconfigured equipment or bypass an unavailable sensor', () => {
+  const seed = cloneTelemetry()
+  seed.hvacZones[0].ac = false
+  const controller = createLocalController(seed, {initialProfile:demoProfile})
+  assert.throws(() => controller.dispatch({type:'hvac.toggleEquipment',zoneId:'zone-1',equipment:'furnace'}),/not configured/)
+  assert.throws(() => controller.dispatch({type:'hvac.toggleEquipment',zoneId:'zone-1',equipment:'ac'}),/sensor unavailable/)
+  assert.throws(() => controller.dispatch({type:'hvac.updateSettings',zoneId:'zone-1',settings:{mode:'Auto'}}),/sensor unavailable/)
+})

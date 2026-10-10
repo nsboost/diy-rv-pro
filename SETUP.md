@@ -1,4 +1,51 @@
-# Setup
+# Development setup
+
+## Current implementation
+
+The browser demo runs its controller in-process. There is no required backend
+service or `backend/` folder. Use Node.js 22 LTS, Python 3.11, PlatformIO 6.1.19
+and Visual Studio C++ Build Tools for Windows firmware host tests.
+
+```powershell
+Set-Location frontend
+npm ci
+npm test
+npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
+```
+
+Open http://127.0.0.1:5173/ on this computer. The banner identifies simulation.
+Configuration, rules and alerts persist in browser storage. `npm run build`
+writes production assets into `firmware/esp32-s3/data`.
+
+From the repository root on Windows:
+
+```powershell
+python -m pip install platformio==6.1.19
+./scripts/pio.ps1
+./scripts/test-firmware.ps1
+./scripts/pio.ps1 run --target buildfs
+```
+
+The wrapper supports checkout paths containing spaces through a verified
+junction. Linux can run `pio run` from `firmware/esp32-s3` in a path without
+spaces. The initial SDK build can take several minutes.
+
+Settings provides first-boot setup, connection and network forms. Record the
+generated admin token, set an AP password, save, restart and reconnect. Tokens
+default to session storage; remembering across sessions is opt-in. Production
+assets use the same-origin ESP32 API.
+
+The new partition layout requires a coordinated complete firmware/partition/web
+installation and a backup of existing settings. No board is flashed by a build.
+See [API details](docs/API.md) and [delivery evidence](docs/DELIVERY_STATUS.md).
+Physical output drivers, additional telemetry sources, time synchronization and
+pairing bench tests remain active work.
+
+## Earlier architecture plan
+
+The sections below retain the original planned stack and commands. Backend
+bridge and direct ESP-IDF folder examples describe future alternatives; use the
+current commands above for this checkout.
 
 ## Overview
 

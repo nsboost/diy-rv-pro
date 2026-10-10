@@ -21,9 +21,9 @@ optional add-on that can be installed initially or enrolled later.
 | Generator | Monitor-only and documented control strategies; crank/retry limits, feedback, cooldown, lockout and manual override tests | Configuration and simulation |
 | Electrical | Multiple solar controllers, inverters, batteries, AC/DC circuits; model-specific protocol maps and isolation | Configuration and simulation |
 | Water | Tank types/calibration, pumps, tank/tankless heaters, fuel/element options and recirculation; device-specific interlocks | Configuration and simulation |
-| Temperature | HVAC, refrigerators, freezers, ambient and equipment zones; sensor identity, units, calibration, faults | Configuration and simulation |
+| Temperature | HVAC, refrigerators, freezers, ambient and equipment zones; sensor identity, units, calibration, faults | Addressed DS18B20 inventory/discovery and stale/fault handling implemented; hardware bench verification pending |
 | Optional security | Enrollment, contact/presence/tamper inputs, debounce, supervised wiring options, heartbeat loss, arming and events | Local GPIO contact sampler and authenticated endpoint implemented; debounce host-tested; hardware/UI/expansion pending |
-| Automation | Persistent rules, bounded execution, priority/interlock checks, reboot and fault tests | Demo behavior |
+| Automation | Persistent rules, bounded execution, priority/interlock checks, reboot and fault tests | Browser engine and persistence implemented; portable firmware evaluator and NVS sensor-alert runtime implemented; equipment drivers and other source integration pending |
 | Configurator | Guided inventory, supported driver selection, connection mapping, calibration, conflict checks, commissioning, backup/restore and upgrade migration | Partial editor |
 | Configuration-driven UI | Installed items only; actual readings, command feedback, fault/offline states; responsive browser tests | Demo-first |
 | Security | Authenticated transport/enrollment, authorization, credential lifecycle, update signing/recovery and adversarial tests | Incomplete |

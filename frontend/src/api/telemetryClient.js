@@ -178,6 +178,33 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
       return structuredClone(telemetry)
     },
     dispatch(action) {
+      if (action?.type?.startsWith('generator.') || action?.type?.startsWith('hvac.')) {
+        const current = projectTelemetry(telemetry, config.features)
+        const systems = controlSystems(config.features)
+        let target, command
+        if (action.type.startsWith('generator.')) {
+          target = 'generator'; command = action.type === 'generator.start' ? 'start' : 'stop'
+          if (!systems.some(system => system.id === target)) throw new Error('Configure a controllable generator first')
+        } else {
+          const zone = current.hvacZones.find(item => item.id === action.zoneId)
+          if (!zone || zone.controlMode !== 'controller') throw new Error('HVAC zone is not controller managed')
+          if (action.type === 'hvac.toggleEquipment') {
+            target = `hvac.${zone.id}.${action.equipment}`
+            if (action.equipment !== 'auto' && !systems.some(system => system.id === target)) throw new Error('This HVAC output is not configured')
+            command = zone[action.equipment] ? 'turnOff' : 'turnOn'
+          } else if ((action.mode || action.settings?.mode) !== 'Off' && zone.sensorStatus !== 'ok') {
+            throw new Error('HVAC sensor unavailable')
+          }
+          if (command === 'turnOn' && zone.sensorStatus !== 'ok') throw new Error('HVAC sensor unavailable')
+        }
+        if (target && command) {
+          const enabled = id => current.automationRules.some(rule => rule.id === id && rule.enabled)
+          const blocks = Object.entries(blocked[target] || {}).filter(([id]) => enabled(id)).map(([, value]) => value)
+          if (target === 'generator') blocks.push(...Object.entries(blocked['generator.autoStart'] || {}).filter(([id]) => enabled(id)).map(([, value]) => value))
+          if (blocks.includes(['start', 'turnOn'].includes(command) ? 'blockOn' : 'blockOff')) throw new Error('Command prevented by an active blocking rule')
+        }
+        telemetry = current
+      }
       telemetry = applyControlAction(telemetry, action)
       if (action.type.startsWith('automation.')) { delete runtime[action.id || action.rule?.id] }
       persist()
