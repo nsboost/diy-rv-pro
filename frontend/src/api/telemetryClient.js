@@ -1,3 +1,4 @@
+import { requestControllerJson } from './controllerRequest.js'
 import { cloneTelemetry, defaultConfig } from '../data/mockTelemetry.js'
 import { defaultSystemProfile, normalizeSystemProfile } from '../config/systemProfile.js'
 import { projectTelemetry } from './profileTelemetry.js'
@@ -556,13 +557,7 @@ export function getAdminToken() {
 export async function fetchTelemetry(token = getAdminToken()) {
   const headers = { Accept: 'application/json' }
   if (token) headers.Authorization = `Bearer ${token}`
-  const response = await fetch(TELEMETRY_ENDPOINT, { headers })
-
-  if (!response.ok) {
-    throw new Error('Telemetry request failed')
-  }
-
-  return response.json()
+  return requestControllerJson(TELEMETRY_ENDPOINT, { headers })
 }
 
 export async function fetchConfig(token) {
@@ -571,18 +566,12 @@ export async function fetchConfig(token) {
     headers.Authorization = `Bearer ${token}`
   }
 
-  const response = await fetch(CONFIG_ENDPOINT, { headers })
-
-  if (!response.ok) {
-    throw new Error('Configuration request failed')
-  }
-
-  const config = await response.json()
+  const config = await requestControllerJson(CONFIG_ENDPOINT, { headers })
   return { ...config, features: normalizeSystemProfile(config.features) }
 }
 
 export async function pushControlAction(action, token) {
-  const response = await fetch(CONTROL_ENDPOINT, {
+  return requestControllerJson(CONTROL_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -591,15 +580,10 @@ export async function pushControlAction(action, token) {
     body: JSON.stringify(action)
   })
 
-  if (!response.ok) {
-    throw new Error('Control action rejected')
-  }
-
-  return response.json()
 }
 
 export async function saveConfig(config, token) {
-  const response = await fetch(CONFIG_ENDPOINT, {
+  return requestControllerJson(CONFIG_ENDPOINT, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -608,9 +592,4 @@ export async function saveConfig(config, token) {
     body: JSON.stringify(config)
   })
 
-  if (!response.ok) {
-    throw new Error('Configuration save rejected')
-  }
-
-  return response.json()
 }

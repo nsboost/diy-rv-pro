@@ -1,3 +1,4 @@
+import { requestControllerJson } from './api/controllerRequest.js'
 import ControllerSettings from './components/ControllerSettings.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -951,14 +952,17 @@ export default function App() {
   useEffect(() => {
     let cancelled = false
 
+    let syncingTelemetry = false
     const syncTelemetry = async () => {
+      if (syncingTelemetry || cancelled) return
+      syncingTelemetry = true
       try {
         const token = getAdminToken()
         const snapshot = await fetchTelemetry()
         if (token) {
-          const response = await fetch('/api/temperature/devices', {headers: {Authorization: `Bearer ${token}`}})
-          if (response.ok) {
-            const devices = (await response.json()).devices
+          const discovery = await requestControllerJson('/api/temperature/devices', {headers: {Authorization: `Bearer ${token}`}}).catch(() => null)
+          if (discovery) {
+            const devices = discovery.devices
             const config = await fetchConfig(token)
             setSystemProfile(config.features)
             snapshot.temperatures = devices.flatMap(device => config.features.temperatureZones.filter(sensor => sensor.busId === device.busId && sensor.address?.toLowerCase() === device.address?.toLowerCase()).map(sensor => ({...device, id: sensor.id, sampledAt: Date.now() - device.ageMs})))
@@ -973,6 +977,8 @@ export default function App() {
           setApiOnline(false)
           setTelemetry(current => current.controller.mode === 'simulation' || import.meta.env.DEV && current.controller.mode !== 'device' ? current : ({ ...current, controller: { ...current.controller, online: false, mode: 'device' } }))
         }
+      } finally {
+        syncingTelemetry = false
       }
     }
 

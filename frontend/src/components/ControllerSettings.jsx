@@ -1,3 +1,4 @@
+import { requestControllerJson } from '../api/controllerRequest.js'
 import { useEffect, useState } from 'react'
 import { fetchConfig, getAdminToken, saveConfig } from '../api/telemetryClient.js'
 
@@ -13,9 +14,7 @@ export default function ControllerSettings({ telemetry, apiOnline, onProfile, on
   useEffect(() => { setScheduleTimezone(demoTimezone || 'America/Denver') }, [demoTimezone])
   const [network, setNetwork] = useState({apSsid:'DIY-RV-PRO', apPassword:'',stationSsid:'',stationPassword:'',timezone:'America/Denver'})
   const refresh = async () => {
-    const response = await fetch('/api/status', {headers:{Accept:'application/json'}})
-    if (!response.ok) throw new Error('Controller status is unavailable')
-    const next = await response.json()
+    const next = await requestControllerJson('/api/status', {headers:{Accept:'application/json'}})
     if (typeof next.setupComplete !== 'boolean' || next.target !== 'esp32-s3') throw new Error('Controller returned an invalid status')
     setStatus(next)
     if (getAdminToken()) {
