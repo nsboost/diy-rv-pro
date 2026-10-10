@@ -22,6 +22,6 @@ test('controller JSON returns confirmed data and reports rejection status', asyn
   try {
     assert.deepEqual(await requestControllerJson('/api/config'),{saved:true})
     globalThis.fetch = async () => ({ok:false,status:401})
-    await assert.rejects(requestControllerJson('/api/config'), /HTTP 401/)
+    await assert.rejects(requestControllerJson('/api/config'), error => error.status === 401 && /HTTP 401/.test(error.message))
   } finally {globalThis.fetch = original}
 })

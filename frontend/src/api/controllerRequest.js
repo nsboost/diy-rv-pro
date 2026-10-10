@@ -4,7 +4,11 @@ export async function requestControllerJson(url, options = {}, {timeoutMs = 1000
   const timeout = setTimeout(() => abort.abort(), timeoutMs)
   try {
     const response = await fetch(url, {...options, signal:abort.signal})
-    if (!response.ok) throw new Error(`Controller request rejected (HTTP ${response.status}).`)
+    if (!response.ok) {
+      const error = new Error(`Controller request rejected (HTTP ${response.status}).`)
+      error.status = response.status
+      throw error
+    }
     return await response.json()
   } catch (error) {
     if (abort.signal.aborted) {

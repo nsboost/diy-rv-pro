@@ -1146,9 +1146,14 @@ export default function App() {
             if (snapshot.controller.mode !== 'device' && import.meta.env.DEV) return demoReadings().map(reading => ({...reading, busId: 'demo-bus', demo: true}))
             const token = getAdminToken()
             if (!apiOnline || !token) throw new Error('Connect and sign in to discover controller sensors')
-            const response = await fetch('/api/temperature/devices', {headers: {Authorization: `Bearer ${token}`}})
-            if (!response.ok) throw new Error(response.status === 503 ? 'Saved bus changes require a controller restart before discovery.' : 'Sensor discovery failed')
-            return (await response.json()).devices
+            try {
+              const result = await requestControllerJson('/api/temperature/devices', {headers: {Authorization: `Bearer ${token}`}})
+              if (!Array.isArray(result.devices) || result.devices.some(device => !device || typeof device.busId !== 'string' || typeof device.address !== 'string')) throw new Error('Controller returned invalid sensor discovery data.')
+              return result.devices
+            } catch (error) {
+              if (error.status === 503) throw new Error('Saved bus changes require a controller restart before discovery.')
+              throw error
+            }
           }} />
         </section>
       )
