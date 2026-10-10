@@ -89,6 +89,37 @@ test('failed acknowledgement persistence leaves the alert unread and allows retr
   assert.throws(() => controller.acknowledge('missing'), /not found/)
 })
 
+test('failed configuration and rule saves preserve the committed state and activation', () => {
+  const values = new Map()
+  let failWrites = false
+  const storage = {getItem:key => values.get(key),setItem:(key,value) => {
+    if (failWrites) throw new Error('Quota exceeded')
+    values.set(key,value)
+  }}
+  const controller = createLocalController(cloneTelemetry(), {storage,initialProfile:demoProfile})
+  controller.dispatch({type:'automation.upsert',rule:{...alertRule,trigger:{...alertRule.trigger,holdFor:'0 sec'}}})
+  controller.setReadings(demoReadings(1000).map(item => ({...item,tempF:80})))
+  const before = controller.tick(1000)
+  const originalConfig = controller.getConfig()
+  const updatedConfig = structuredClone(originalConfig)
+  updatedConfig.features.rvProfile.name = 'Changed RV'
+  failWrites = true
+  assert.throws(() => controller.updateConfig(updatedConfig), /Configuration could not be saved/)
+  assert.deepEqual(controller.getConfig(),originalConfig)
+  for (const action of [{type:'automation.setEnabled',id:alertRule.id,enabled:false},{type:'automation.delete',id:alertRule.id},{type:'automation.upsert',rule:{...alertRule,name:'Changed alert'}}]) {
+    assert.throws(() => controller.dispatch(action), /Automation change could not be saved/)
+    assert.deepEqual(controller.getTelemetry().automationRules,before.automationRules)
+    assert.equal(controller.getTelemetry().ruleRuntime[alertRule.id].active,true)
+  }
+  failWrites = false
+  assert.equal(controller.tick(2000).notifications.length,before.notifications.length)
+  controller.updateConfig(updatedConfig)
+  controller.dispatch({type:'automation.setEnabled',id:alertRule.id,enabled:false})
+  const restored = createLocalController(cloneTelemetry(), {storage})
+  assert.equal(restored.getConfig().features.rvProfile.name,'Changed RV')
+  assert.equal(restored.getTelemetry().automationRules.find(rule => rule.id === alertRule.id).enabled,false)
+})
+
 test('blocking rule prevents generator action irrespective of rule ordering', () => {
   const controller = createLocalController(cloneTelemetry(), {initialProfile: demoProfile})
   const trigger = {source: 'battery.voltage', operator: '>', value: '0', holdFor: '0 sec'}

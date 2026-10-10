@@ -110,6 +110,8 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
       const features = normalizeSystemProfile(nextConfig.features || config.features)
       const issues = validateProfile(features)
       if (issues.length) throw new Error(issues.join('; '))
+      const previousConfig = config
+      const previousTelemetry = structuredClone(telemetry)
       const installed = (profile, section) => (profile[section] || []).some(item => item.enabled)
       for (const [section, group] of [['batteries','battery'], ['solarChargeControllers','solar'], ['inverters','inverter'], ['weatherStations','weather'], ['generators','generator']]) {
         if (installed(features, section) && !installed(config.features, section)) telemetry[group] = structuredClone(demoBaseline[group])
@@ -119,7 +121,13 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
       const hasPower = profile => installed(profile, 'batteries') || installed(profile, 'solarChargeControllers') || hasLoads(profile)
       if (hasPower(features) && !hasPower(config.features)) telemetry.powerHistory = structuredClone(demoBaseline.powerHistory)
       config = { ...config, ...nextConfig, features }
-      persist(); emit()
+      if (!persist()) {
+        config = previousConfig
+        telemetry = previousTelemetry
+        emit()
+        throw new Error('Configuration could not be saved. Free browser storage and try again.')
+      }
+      emit()
       return structuredClone(config)
     },
     subscribe(listener) {
@@ -226,9 +234,20 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
         }
         telemetry = current
       }
+      const previousTelemetry = telemetry
+      const isRuleEdit = action.type.startsWith('automation.')
+      const ruleId = action.id || action.rule?.id
+      const previousRuntime = runtime[ruleId]
       telemetry = applyControlAction(telemetry, action)
-      if (action.type.startsWith('automation.')) { delete runtime[action.id || action.rule?.id] }
-      persist()
+      if (isRuleEdit) delete runtime[ruleId]
+      const saved = persist()
+      if (!saved && isRuleEdit) {
+        telemetry = previousTelemetry
+        if (previousRuntime === undefined) delete runtime[ruleId]
+        else runtime[ruleId] = previousRuntime
+        emit()
+        throw new Error('Automation change could not be saved. Free browser storage and try again.')
+      }
       emit()
       return structuredClone(telemetry)
     }
