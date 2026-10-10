@@ -89,12 +89,12 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
   runtime. Temperature-based alerts run in a background task. Physical equipment
   drivers, other source values, time synchronization and hardware bench checks
   remain incomplete; equipment prototype simulation is labeled explicitly.
-- The frontend suite currently contains 32 passing tests, including malformed
+- The frontend suite currently contains 33 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
-  contain 16 passing tests including time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
+  contain 17 passing tests including disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
   failed-execution retries. ESP32-S3 integration build passed: 77,872 bytes static
-  RAM and 991,217 bytes application flash. Runtime headroom and hardware operation
+  RAM and 991,233 bytes application flash. Runtime headroom and hardware operation
   still need bench verification.
 
 The active goal remains open until the remaining runtime/menu gaps and GitHub
@@ -138,6 +138,13 @@ equipment and supported commands immediately before execution. A saved rule
 cannot continue operating a generator switched to monitor-only; it reports the
 unavailable target and retains pending activation. The 32-test frontend suite
 and production build pass with this regression covered.
+
+Setup validates controller-compatible integer bounds for generator timing, tank
+calibration/capacity, power capacity, temperature alarms and security delays.
+Unsupported HVAC modes and unassigned controller-managed water-heater outputs
+are rejected before save. Disabled circuits may keep an unassigned output in
+both frontend and firmware; enabling a controllable circuit requires its relay.
+Frontend tests (33), firmware host tests (17), and the frontend build pass.
 
 Stored notification recovery now validates the version, bounded field types,
 unique alert identities and nonnegative timestamps before publishing the state.

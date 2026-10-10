@@ -2,6 +2,17 @@ import { validateSensorInventory } from './sensorInventory.js'
 import { optionSets } from './systemProfile.js'
 
 export const sectionLimits = { temperatureBuses: 4, hvacZones: 8, temperatureZones: 32, solarChargeControllers: 8, inverters: 6, batteries: 8, generators: 2, acBreakers: 48, dcCircuits: 64, waterTanks: 12, waterHeaters: 4, waterPumps: 8, propaneSystems: 4, weatherStations: 2, cameras: 8, securityZones: 16, securitySensors: 64, customIo: 64 }
+const powerRanges = { maxCurrentA: [0, 500], capacityAh: [0, 2000] }
+const numericRanges = {
+  hvacZones: { stageCount: [0, 4] },
+  generators: { maxCrankSeconds: [1, 30], warmupSeconds: [0, 600], cooldownSeconds: [0, 600] },
+  waterTanks: { capacityGal: [0, 500], emptyMv: [0, 3300], fullMv: [0, 3300] },
+  acBreakers: { ratingA: [0, 100] }, dcCircuits: { ratingA: [0, 100] },
+  batteries: powerRanges, inverters: powerRanges, solarChargeControllers: powerRanges,
+  temperatureZones: { lowAlarmF: [-40, 250], highAlarmF: [-40, 250] },
+  securityZones: { entryDelaySeconds: [0, 600], exitDelaySeconds: [0, 600] },
+  securitySensors: { expanderAddress: [-1, 127], expanderPin: [-1, 31], heartbeatSeconds: [0, 86400] }
+}
 
 export function validateProfile(profile) {
   if (!profile || typeof profile !== 'object' || Array.isArray(profile)) return ['Configuration must be an object']
@@ -31,6 +42,11 @@ export function validateProfile(profile) {
       if (typeof item.id !== 'string' || !item.id || item.id.length > 32 || ids.has(item.id)) errors.push(`${section}: missing or duplicate item identity`)
       ids.add(item.id)
       if (!item.label?.trim() || item.label.length > 48) errors.push(`${section}: labels must contain 1–48 characters`)
+      for (const [key, [min, max]] of Object.entries(numericRanges[section] || {})) {
+        if (item[key] !== undefined && (!Number.isInteger(item[key]) || item[key] < min || item[key] > max)) errors.push(`${item.label}: ${key} must be an integer from ${min} to ${max}`)
+      }
+      if (section === 'hvacZones' && !['monitor-only', 'self-controlled', 'controller'].includes(item.controlMode)) errors.push(`${item.label}: unsupported HVAC control mode`)
+      if (section === 'generators' && !optionSets.generatorControl.includes(item.controlStrategy)) errors.push(`${item.label}: unsupported generator strategy`)
       for (const [key, value] of Object.entries(item)) {
         if (/Gpio$|^gpio$|^adcChannel$/.test(key) && (!Number.isInteger(value) || value < -1 || value > 48)) errors.push(`${item.label}: ${key} must be an integer from -1 to 48`)
         if (/Relay$|^relay$/.test(key)) {
@@ -49,6 +65,7 @@ export function validateProfile(profile) {
       }
       if (section === 'hvacZones' && item.controlMode === 'controller' && !['coolRelay', 'furnaceRelay', 'heatPumpRelay', 'fanRelay'].some(key => item[key] >= 0)) errors.push(`${item.label}: assign an equipment relay`)
       if (['acBreakers', 'dcCircuits'].includes(section) && item.controllable && item.relay < 0) errors.push(`${item.label}: controllable circuits require a relay`)
+      if (section === 'waterHeaters' && item.controlMode === 'controller' && !['acElementRelay', 'dcElementRelay', 'propaneRelay'].some(key => Number.isInteger(item[key]) && item[key] >= 0)) errors.push(`${item.label}: assign a heating output`)
       if (section === 'securitySensors' && item.zoneId && !(profile.securityZones || []).some(zone => zone.enabled && zone.id === item.zoneId)) errors.push(`${item.label}: select an enabled security zone`)
       if (section === 'waterTanks' && (!(item.capacityGal > 0) || item.emptyMv === item.fullMv)) errors.push(`${item.label}: enter positive capacity and distinct empty/full calibration`)
     }

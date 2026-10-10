@@ -311,7 +311,7 @@ static bool validate_breaker(const cJSON *breaker, char *error, size_t error_len
         return false;
     }
     const cJSON *controllable = cJSON_GetObjectItemCaseSensitive(breaker, "controllable");
-    if (cJSON_IsTrue(controllable) && !has_configured_relay(breaker, "relay")) {
+    if (is_enabled(breaker) && cJSON_IsTrue(controllable) && !has_configured_relay(breaker, "relay")) {
         set_error(error, error_len, "Controllable breaker requires a relay");
         return false;
     }

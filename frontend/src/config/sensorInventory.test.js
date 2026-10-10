@@ -19,6 +19,17 @@ test('malformed imported inventories return validation errors without crashing s
   assert.ok(validateProfile(profile).some(error => error.includes('inventory list')))
 })
 
+test('setup rejects controller-incompatible timing, calibration and capacity values', () => {
+  for (const [section, key, value] of [['generators', 'maxCrankSeconds', 31], ['generators', 'warmupSeconds', -1], ['waterTanks', 'fullMv', 3301], ['waterTanks', 'capacityGal', 2.5], ['temperatureZones', 'highAlarmF', 251], ['batteries', 'capacityAh', 2001]]) {
+    const profile = structuredClone(demoProfile)
+    profile[section][0][key] = value
+    assert.ok(validateProfile(profile).some(error => error.includes(key)))
+  }
+  const profile = structuredClone(demoProfile)
+  profile.hvacZones[0].controlMode = 'unsupported'
+  assert.ok(validateProfile(profile).some(error => error.includes('HVAC control mode')))
+})
+
 test('two zones share one bus but keep stable, separate sensor identities', () => {
   assert.deepEqual(validateProfile(demoProfile), [])
   const readings = demoReadings(1000).reverse()

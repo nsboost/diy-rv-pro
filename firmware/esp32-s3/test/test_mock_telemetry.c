@@ -121,6 +121,23 @@ void test_monitoring_modes_do_not_require_output_relays(void)
     cJSON_Delete(root);
 }
 
+void test_disabled_circuit_does_not_require_an_output_assignment(void)
+{
+    static diy_feature_config_t features;
+    feature_config_defaults(&features);
+    cJSON *root = feature_config_to_json(&features), *circuit = cJSON_CreateObject();
+    cJSON_AddStringToObject(circuit,"id","circuit-1");
+    cJSON_AddBoolToObject(circuit,"enabled",false);
+    cJSON_AddBoolToObject(circuit,"controllable",true);
+    cJSON_AddNumberToObject(circuit,"relay",-1);
+    cJSON_AddItemToArray(cJSON_GetObjectItemCaseSensitive(root,"acBreakers"),circuit);
+    char error[128]={0};
+    TEST_ASSERT_EQUAL(ESP_OK,feature_config_update_from_json(&features,root,error,sizeof(error)));
+    cJSON_ReplaceItemInObjectCaseSensitive(circuit,"enabled",cJSON_CreateBool(true));
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG,feature_config_update_from_json(&features,root,error,sizeof(error)));
+    cJSON_Delete(root);
+}
+
 void test_fractional_gpio_is_rejected_without_mutating_saved_profile(void)
 {
     static diy_feature_config_t features;
@@ -377,6 +394,7 @@ void app_main(void)
     RUN_TEST(test_invalid_modes_and_fractional_schema_are_rejected);
     RUN_TEST(test_monitoring_modes_do_not_require_output_relays);
     RUN_TEST(test_fractional_gpio_is_rejected_without_mutating_saved_profile);
+    RUN_TEST(test_disabled_circuit_does_not_require_an_output_assignment);
     RUN_TEST(test_generator_start_stop_actions_are_simulated);
     RUN_TEST(test_hvac_setpoint_rejects_unsafe_range);
     RUN_TEST(test_feature_config_accepts_tank_setup);
