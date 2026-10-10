@@ -504,12 +504,27 @@ static void test_security_sources_reject_stale_and_disabled_contacts(void) {
     cJSON_Delete(sources); cJSON_Delete(readings); cJSON_Delete(profile);
 }
 
+static void test_contact_rule_comparisons_require_boolean_semantics(void) {
+    cJSON *rule=cJSON_Parse("{\"id\":\"contact\",\"name\":\"Door alert\",\"enabled\":true,\"trigger\":{\"source\":\"security.door.active\",\"operator\":\"=\",\"value\":\"true\",\"holdFor\":\"0 sec\"},\"action\":{\"type\":\"alert\",\"target\":\"notification\",\"command\":\"sendAlert\",\"value\":\"Door active\"},\"reverse\":{\"enabled\":false}}");
+    char error[128];
+    TEST_ASSERT_TRUE(automation_validate_rule(rule,error,sizeof(error)));
+    cJSON *trigger=cJSON_GetObjectItemCaseSensitive(rule,"trigger");
+    cJSON_ReplaceItemInObjectCaseSensitive(trigger,"value",cJSON_CreateString("1"));
+    TEST_ASSERT_FALSE(automation_validate_rule(rule,error,sizeof(error)));
+    cJSON_ReplaceItemInObjectCaseSensitive(trigger,"operator",cJSON_CreateString(">"));
+    TEST_ASSERT_FALSE(automation_validate_rule(rule,error,sizeof(error)));
+    cJSON_ReplaceItemInObjectCaseSensitive(trigger,"operator",cJSON_CreateString("changes"));
+    TEST_ASSERT_TRUE(automation_validate_rule(rule,error,sizeof(error)));
+    cJSON_Delete(rule);
+}
+
 int main(void)
 #else
 void app_main(void)
 #endif
 {
     UNITY_BEGIN();
+    RUN_TEST(test_contact_rule_comparisons_require_boolean_semantics);
     RUN_TEST(test_security_sources_reject_stale_and_disabled_contacts);
     RUN_TEST(test_automation_hold_fault_reset_restore_and_retry);
     RUN_TEST(test_automation_rejects_invalid_rules);

@@ -1,5 +1,6 @@
 #include "automation_engine.h"
 #include <math.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -86,6 +87,17 @@ static bool condition_valid(const cJSON *condition) {
     return false;
   const char *op = str(condition, "operator");
   double a, b;
+  const char *source = str(condition, "source");
+  size_t source_len = strlen(source);
+  if (!strncmp(source, "security.", 9) && source_len >= 16 && !strcmp(source + source_len - 7, ".active")) {
+    if (!strcmp(op, "changes")) return true;
+    if (strcmp(op, "=") && strcmp(op, "!=")) return false;
+    const char *value = str(condition, "value");
+    char lower[6] = {0};
+    if (strlen(value) >= sizeof(lower)) return false;
+    for (size_t i = 0; value[i]; ++i) lower[i] = (char)tolower((unsigned char)value[i]);
+    return !strcmp(lower,"true") || !strcmp(lower,"false") || !strcmp(lower,"on") || !strcmp(lower,"off");
+  }
   if (!strcmp(op, "changes"))
     return true;
   if (!bounded(condition, "value", 1, 256))
