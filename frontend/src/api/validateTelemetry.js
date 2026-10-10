@@ -33,7 +33,12 @@ export function validateTelemetry(value) {
   for (const item of value.events) fields(item,['time','type','message'])
   for (const item of value.tanks) fields(item,['name','label','unit'],['level','capacity','gallons'])
   for (const item of value.automationRules) fields(item,['id','name','detail'],[],['enabled'])
-  for (const item of value.notifications || []) fields(item,['id','message','severity','ruleId'],['createdAt','uptimeMs'],['read'])
+  const alertIds = new Set()
+  for (const item of value.notifications || []) {
+    fields(item,['id','message','severity','ruleId'],['createdAt','uptimeMs'],['read'])
+    if (typeof item.id !== 'string' || !item.id.trim() || new TextEncoder().encode(item.id).length > 32 || alertIds.has(item.id)) reject()
+    alertIds.add(item.id)
+  }
   for (const state of Object.values(value.ruleRuntime || {})) {
     if (!object(state)) reject()
     fields(state,['error'],[],['active','holding','sourceAvailable'])

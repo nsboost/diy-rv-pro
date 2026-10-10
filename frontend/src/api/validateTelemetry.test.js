@@ -47,3 +47,11 @@ test('telemetry flags reject truthy coercions while retaining false and unknown 
   value.ruleRuntime={rule:{active:'false'}}
   assert.throws(()=>validateTelemetry(value),/invalid telemetry/)
 })
+
+test('notification telemetry requires unique bounded acknowledgement identities', () => {
+  for (const notifications of [[{}],[{id:''}],[{id:' '.repeat(2)}],[{id:'é'.repeat(17)}],[{id:'same'},{id:'same'}]]) {
+    assert.throws(()=>validateTelemetry({...structuredClone(initialTelemetry),notifications}),/invalid telemetry/)
+  }
+  const value={...structuredClone(initialTelemetry),notifications:[{id:'one',read:false},{id:'two',read:true}]}
+  assert.equal(validateTelemetry(value),value)
+})

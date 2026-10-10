@@ -427,3 +427,7 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 ### Strict telemetry state flags (October 10)
 - Known connection, generator, HVAC, rule enablement, acknowledgement and runtime state flags now require actual booleans when supplied. Truthy strings/numbers cannot masquerade as connected/running/read state. Contact active values permit explicit null for unavailable state but reject coerced booleans.
 - All 98 frontend tests and production build passed. Regression preserves false and unknown contact values while rejecting malformed flags. Live malformed-controller browser testing remains pending.
+
+### Unambiguous notification acknowledgement identities (October 10)
+- Device notification telemetry requires nonblank unique IDs bounded to 32 UTF-8 bytes, matching firmware storage identity limits. Missing, duplicate and oversized IDs are rejected rather than silently renumbered before acknowledgement.
+- All 99 frontend tests and production build passed. Regression covers malformed identities and distinct read/unread alerts. Live malformed-controller acknowledgement verification remains pending.
