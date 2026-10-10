@@ -1,4 +1,5 @@
 import { confirmedControl } from './api/confirmedControl.js'
+import { createControlGate } from './api/controlGate.js'
 import { conditionOperators } from './api/automationEngine.js'
 import { mapSecurityInputs } from './api/mapSecurityInputs.js'
 import { mapDiscoveredTemperatures } from './api/mapDiscoveredTemperatures.js'
@@ -947,6 +948,8 @@ export default function App() {
   const [controlError, setControlError] = useState('')
   const [telemetryError, setTelemetryError] = useState('')
   const controllerSeen = useRef(false)
+  const controlGate = useRef(null)
+  if (!controlGate.current) controlGate.current = createControlGate()
   const [nightMode, setNightMode] = useState(false)
   const [demoBackup, setDemoBackup] = useState(() => { try {return JSON.parse(window.localStorage.getItem('diy-rv-demo-inventory-backup') || 'null')} catch {return null} })
   const [browserSettings, setBrowserSettings] = useState(() => {
@@ -1060,13 +1063,15 @@ export default function App() {
   const dispatch = async action => {
     setControlError('')
     try {
-      const token = getAdminToken()
-      if (snapshot.controller.mode === 'device' || !import.meta.env.DEV || token) {
-        if (!apiOnline) throw new Error('Controller disconnected. Command was not sent.')
-        if (!token) throw new Error('Sign in before sending a control command.')
-        const confirmed = await confirmedControl(action, token, pushControlAction, fetchTelemetry)
-        setTelemetry({ ...confirmed, controller: { ...confirmed.controller, mode: 'device', online: true } })
-      } else setTelemetry(controller.dispatch(action))
+      return await controlGate.current(async () => {
+        const token = getAdminToken()
+        if (snapshot.controller.mode === 'device' || !import.meta.env.DEV || token) {
+          if (!apiOnline) throw new Error('Controller disconnected. Command was not sent.')
+          if (!token) throw new Error('Sign in before sending a control command.')
+          const confirmed = await confirmedControl(action, token, pushControlAction, fetchTelemetry)
+          setTelemetry({ ...confirmed, controller: { ...confirmed.controller, mode: 'device', online: true } })
+        } else setTelemetry(controller.dispatch(action))
+      })
     } catch (error) { setControlError(error.message); throw error }
   }
 
