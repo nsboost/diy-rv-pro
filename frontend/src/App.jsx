@@ -434,6 +434,7 @@ function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile }) {
   const [draft, setDraft] = useState(() => createAutomationDraft(rule || { ...createAutomationDraft(), action: buildControlAction({}, 'notification', 'sendAlert', systems), reverse: { ...createAutomationDraft().reverse, target: 'notification', command: 'sendAlert', enabled: false } }))
   const sources = sourceCatalog(profile)
   const [error, setError] = useState('')
+  const [pendingOperation, setPendingOperation] = useState('')
   const setRoot = (key, value) => setDraft(current => ({ ...current, [key]: value }))
   const setGroup = (group, key, value) => setDraft(current => ({
     ...current,
@@ -504,11 +505,15 @@ function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile }) {
     <Modal title={rule ? 'Edit Automation' : 'Create Automation'} onClose={onClose}>
       <form className="settings-form automation-editor" onSubmit={async event => {
         event.preventDefault()
+        if (pendingOperation) return
+        setPendingOperation('save')
+        setError('')
         try {
           if (!sources.some(([id]) => id === draft.trigger.source) || draft.reverse.enabled && !sources.some(([id]) => id === draft.reverse.source)) throw new Error('Select an available sensor for this rule')
           if (!systems.some(system => system.id === draft.action.target && system.commands.includes(draft.action.command)) || draft.reverse.enabled && !systems.some(system => system.id === draft.reverse.target && system.commands.includes(draft.reverse.command))) throw new Error('Select installed equipment and an available action')
           await onSave(draft)
         } catch (error) { setError(error.message) }
+        finally { setPendingOperation('') }
       }}>
         {error && <p role="alert" className="configuration-issues">{error}</p>}
         {(!sources.some(([id]) => id === draft.trigger.source) || selectedActionSystem.category === 'Unavailable' || draft.reverse.enabled && (!sources.some(([id]) => id === draft.reverse.source) || selectedRestoreSystem.category === 'Unavailable')) && <p role="status" className="configuration-issues">This rule references removed or disabled equipment. Select a configured source and action before saving.</p>}
@@ -636,10 +641,14 @@ function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile }) {
         </div>
 
         <div className="modal-actions split">
-          {rule && <button className="danger-action" type="button" onClick={async () => {try {await onDelete(rule.id)} catch (error) {setError(error.message)}}}>Delete</button>}
+          {rule && <button className="danger-action" type="button" disabled={Boolean(pendingOperation)} onClick={async () => {
+            if (pendingOperation) return
+            setPendingOperation('delete'); setError('')
+            try {await onDelete(rule.id)} catch (error) {setError(error.message)} finally {setPendingOperation('')}
+          }}>{pendingOperation === 'delete' ? 'Deleting...' : 'Delete'}</button>}
           <span />
           <button className="secondary-action" type="button" onClick={onClose}>Cancel</button>
-          <button className="primary-action" type="submit">Save Automation</button>
+          <button className="primary-action" type="submit" disabled={Boolean(pendingOperation)}>{pendingOperation === 'save' ? 'Saving...' : 'Save Automation'}</button>
         </div>
       </form>
     </Modal>
