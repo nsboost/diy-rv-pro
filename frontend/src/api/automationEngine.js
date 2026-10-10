@@ -23,6 +23,10 @@ function timeMinute(value) {
 
 export function validateCondition(condition) {
   if (!condition?.source || !operators.has(condition.operator)) throw new Error('Select a source and comparison')
+  if (condition.source.startsWith('security.') && condition.source.endsWith('.active')) {
+    if (!['=','!=','changes'].includes(condition.operator)) throw new Error('Contact sensors support equality, inequality, or changes comparisons.')
+    if (condition.operator !== 'changes' && !['true','false','on','off'].includes(String(condition.value).toLowerCase())) throw new Error('Contact sensor value must be true/on for active or false/off for inactive.')
+  }
   if (condition.operator === 'changes') return
   if (condition.value === undefined || String(condition.value).trim() === '') throw new Error('Comparison value is required')
   if (['between', 'outside'].includes(condition.operator)) {

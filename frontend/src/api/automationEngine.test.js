@@ -392,3 +392,10 @@ test('temperature source reads reject nonnumeric samples for direct and HVAC rul
     assert.equal(readAutomationSource(telemetry,'hvac.zone.tempF',2000),undefined)
   }
 })
+
+test('contact comparisons require boolean meaning and supported operators',()=>{
+  for (const operator of ['=','!=','changes']) validateCondition({source:'security.door.active',operator,value:'true'})
+  for (const value of ['false','off','on']) validateCondition({source:'security.door.active',operator:'=',value})
+  assert.throws(()=>validateCondition({source:'security.door.active',operator:'>',value:'1'}),/Contact sensors support/)
+  assert.throws(()=>validateCondition({source:'security.door.active',operator:'=',value:'1'}),/Contact sensor value/)
+})
