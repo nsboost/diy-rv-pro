@@ -754,6 +754,10 @@ void app_main(void)
 #endif
 {
     UNITY_BEGIN();
+#ifdef DIY_HOST_TEST
+    extern void run_automation_recovery_store_tests(void);
+    run_automation_recovery_store_tests();
+#endif
     RUN_TEST(test_recovery_preparation_disables_rules_without_changing_original);
     RUN_TEST(test_saved_blob_rejects_hidden_suffix_and_invalid_boundaries);
     RUN_TEST(test_saved_state_allocation_failures_never_return_partial_record);

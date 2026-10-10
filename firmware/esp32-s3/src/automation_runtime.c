@@ -1,6 +1,7 @@
 #include "automation_runtime.h"
 #include "automation_engine.h"
 #include "automation_sources.h"
+#include "automation_recovery_store.h"
 #include "esp_log.h"
 #include "esp_random.h"
 #include "esp_timer.h"
@@ -64,6 +65,15 @@ esp_err_t automation_runtime_export_storage(void **data, size_t *size) {
 esp_err_t automation_runtime_export_original(void **data, size_t *size) {
   return export_storage(data, size, true);
 }
+static esp_err_t recovery_read(void *context, const char *key, void *data, size_t *size) {
+  return nvs_get_blob(*(nvs_handle_t *)context, key, data, size);
+}
+static esp_err_t recovery_write(void *context, const char *key, const void *data, size_t size) {
+  return nvs_set_blob(*(nvs_handle_t *)context, key, data, size);
+}
+static esp_err_t recovery_commit(void *context) { return nvs_commit(*(nvs_handle_t *)context); }
+static void *recovery_allocate(void *context, size_t size) { (void)context; return malloc(size); }
+static void recovery_release(void *context, void *data) { (void)context; free(data); }
 
 esp_err_t automation_runtime_recover(const cJSON *state, char *error, size_t error_len) {
   if (!lock) return ESP_ERR_INVALID_STATE;
@@ -80,39 +90,13 @@ esp_err_t automation_runtime_recover(const cJSON *state, char *error, size_t err
   nvs_handle_t handle;
   result = nvs_open("rv_automation", NVS_READWRITE, &handle);
   if (result != ESP_OK) goto done;
-  size_t size = 0;
-  void *original = NULL, *verified = NULL;
-  result = nvs_get_blob(handle, "state", NULL, &size);
-  if (result != ESP_OK) goto closed;
-  if (!size || size > 65537) { result = ESP_ERR_INVALID_SIZE; goto closed; }
-  original = malloc(size);
-  verified = malloc(size);
-  if (!original || !verified) { result = ESP_ERR_NO_MEM; goto closed; }
-  result = nvs_get_blob(handle, "state", original, &size);
-  if (result != ESP_OK) goto closed;
-  char key[16];
-  bool available = false;
-  for (int slot = 0; slot < 8; slot++) {
-    snprintf(key, sizeof(key), "backup%d", slot);
-    size_t previous_size = 0;
-    result = nvs_get_blob(handle, key, NULL, &previous_size);
-    if (result == ESP_ERR_NVS_NOT_FOUND) { available = true; break; }
-    if (result != ESP_OK) goto closed;
-  }
-  if (!available) { result = ESP_ERR_NVS_NOT_ENOUGH_SPACE; goto closed; }
-  result = nvs_set_blob(handle, key, original, size);
-  if (result == ESP_OK) result = nvs_commit(handle);
-  if (result != ESP_OK) goto closed;
-  size_t verified_size = size;
-  result = nvs_get_blob(handle, key, verified, &verified_size);
-  if (result != ESP_OK) goto closed;
-  if (verified_size != size || memcmp(original, verified, size)) { result = ESP_FAIL; goto closed; }
-  /* Only replace the working record after a committed, read-back original copy. */
-  result = nvs_set_blob(handle, "state", payload, payload_size);
-  if (result == ESP_OK) result = nvs_commit(handle);
+  const automation_recovery_store_t store = {
+    .context=&handle, .read=recovery_read, .write=recovery_write, .commit=recovery_commit,
+    .allocate=recovery_allocate, .release=recovery_release,
+    .missing_error=ESP_ERR_NVS_NOT_FOUND, .full_error=ESP_ERR_NVS_NOT_ENOUGH_SPACE
+  };
+  result = automation_recovery_write(&store, payload, payload_size);
   if (result == ESP_OK) recovery_pending = true;
-closed:
-  free(original); free(verified);
   nvs_close(handle);
 done:
   xSemaphoreGive(lock);

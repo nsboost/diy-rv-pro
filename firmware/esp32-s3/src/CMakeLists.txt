@@ -7,6 +7,7 @@ idf_component_register(
         "automation_engine.c"
         "automation_sources.c"
         "automation_runtime.c"
+        "automation_recovery_store.c"
     "main.c"
     "mock_telemetry.c"
     "security.c"

@@ -65,8 +65,12 @@ recovery tests remain outstanding.
   review/discard, explicit backup acknowledgement and authenticated disabled-rule
   save, with controls unavailable while disconnected or without a storage fault.
   Browser review/discard passed with one rule and one alert, and no console errors.
-  All 110 frontend tests and the production build pass. Mocked NVS-failure
-  coverage and physical interrupted-write testing remain incomplete; no
+  All 110 frontend tests and the production build pass. The recovery write sequence
+  is now shared with a portable storage adapter and covered by injected read/write/
+  commit failures, allocation failures, byte-verification mismatch, original size
+  changes, occupied/full backup slots and exact corrupt-binary preservation. All
+  34 firmware host tests pass. These are adapter-level tests; ESP-IDF NVS behavior
+  and physical interrupted-write testing remain incomplete; no
   recovery-completion claim.
   Startup no longer automatically erases the whole NVS partition on no-free-pages
   or version errors. Failed initialization retains the partition and stops startup
