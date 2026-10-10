@@ -442,7 +442,13 @@ function createAutomationDraft(rule) {
   })
 }
 
-function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile }) {
+function AutomationCapabilityNotice({ equipmentMode }) {
+  return <p role="status" className="configuration-issues">{equipmentMode === 'prototype-simulation'
+    ? 'This controller runs alerts from addressed temperature sensors, local contacts and synchronized time. Equipment actions require commissioned drivers; power, tank and generator triggers require physical source integration. Configuring a relay does not commission it.'
+    : 'The demo simulates configured sources and equipment actions. The current controller firmware runs temperature, contact and time alerts; physical equipment actions and power, tank and generator sources still require commissioning.'}</p>
+}
+
+function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile, equipmentMode }) {
   const systems = controlSystems(profile)
   const automationCategories = [...new Set(systems.map(system => system.category))]
   const [draft, setDraft] = useState(() => createAutomationDraft(rule || { ...createAutomationDraft(), action: buildControlAction({}, 'notification', 'sendAlert', systems), reverse: { ...createAutomationDraft().reverse, target: 'notification', command: 'sendAlert', enabled: false } }))
@@ -529,6 +535,7 @@ function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile }) {
         } catch (error) { setError(error.message) }
         finally { setPendingOperation('') }
       }}>
+        <AutomationCapabilityNotice equipmentMode={equipmentMode} />
         {error && <p role="alert" className="configuration-issues">{error}</p>}
         {(!sources.some(([id]) => id === draft.trigger.source) || selectedActionSystem.category === 'Unavailable' || draft.reverse.enabled && (!sources.some(([id]) => id === draft.reverse.source) || selectedRestoreSystem.category === 'Unavailable')) && <p role="status" className="configuration-issues">This rule references removed or disabled equipment. Select a configured source and action before saving.</p>}
         <div className="form-grid two">
@@ -845,7 +852,7 @@ function EventsPanel({ events }) {
   )
 }
 
-function AutomationPanel({ rules, runtime, profile, onDispatch, onEdit, onCreate }) {
+function AutomationPanel({ rules, runtime, profile, equipmentMode, onDispatch, onEdit, onCreate }) {
   const catalog = {sources: sourceCatalog(profile), systems: controlSystems(profile)}
   return (
     <section className="panel automation-panel" id="section-automation">
@@ -853,6 +860,7 @@ function AutomationPanel({ rules, runtime, profile, onDispatch, onEdit, onCreate
         <h2>Automation Status</h2>
         <button className="ghost-action" onClick={onCreate} type="button">New Rule</button>
       </div>
+      <AutomationCapabilityNotice equipmentMode={equipmentMode} />
       {rules.map(rule => (
         <div className="automation-row" key={rule.id}>
           <Icon name="gear" className="automation-icon" />
@@ -1162,6 +1170,7 @@ export default function App() {
         </div>
         <EventsPanel events={telemetry.events} />
         <AutomationPanel
+          equipmentMode={snapshot.controller.equipmentMode}
           rules={telemetry.automationRules}
           runtime={telemetry.ruleRuntime}
           profile={systemProfile}
@@ -1281,6 +1290,7 @@ export default function App() {
         >
           <div className="page-grid page-grid-automation">
             <AutomationPanel
+              equipmentMode={snapshot.controller.equipmentMode}
               rules={telemetry.automationRules}
               runtime={telemetry.ruleRuntime}
               profile={systemProfile}
@@ -1378,6 +1388,7 @@ export default function App() {
       )}
       {(editingAutomationRule || creatingAutomation) && (
         <AutomationRuleDialog
+          equipmentMode={snapshot.controller.equipmentMode}
           profile={systemProfile}
           rule={editingAutomationRule}
           onClose={() => {

@@ -107,6 +107,12 @@ recovery tests remain outstanding.
   OS delivery while the dashboard is open. Closed-browser background delivery
   is outside the chosen in-app/browser implementation and is not promised.
 - [ ] Finish commissioning and protocol-capability selection so menu choices match
+  Automation status and the rule editor now explicitly explain current controller
+  limitations: temperature/contact/time alerts are implemented; equipment drivers
+  and physical power/tank/generator sources require commissioning. Demo wording
+  makes its simulated sources/actions explicit. Both notices were verified in the
+  live browser, and the editor was closed without saving. Production build passed.
+  This disclosure does not replace capability selection or physical integration.
   actual supported hardware. Verify configuration saves, restart requirements,
   discovery and manual overrides on the installed target.
 - [ ] Inspect complete CI for the final code revision, then reconcile release
