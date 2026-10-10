@@ -93,6 +93,15 @@ recovery tests remain outstanding.
   simulated HTTP evidence, not ESP32 evidence. Acknowledgement, HVAC saves,
   backdrop dismissal and failure-path UI checks remain open. The fixture tab and
   server were closed; the standalone demo inventory was unchanged.
+  HVAC settings were also exercised against the eight-second fixture: fields,
+  Cancel and Close were disabled while pending, and Escape retained the dialog.
+  A stale-sensor rejection left the submitted setpoint and an explicit error in
+  the editor. A subsequent valid Off-mode save closed only after confirmation;
+  the climate card showed Off and the new 73 F cool setpoint. Missing current
+  temperature now displays Unavailable instead of null F, verified after loading
+  the rebuilt production GUI. No captured console errors occurred. Fixture tab
+  and server were closed. These remain simulated HTTP checks; acknowledgement,
+  backdrop dismissal and physical-device verification remain open.
   A shared command guard now rejects overlapping dashboard, HVAC, automation and
   device acknowledgement requests without sending or queuing the second action.
   Regression tests cover deferred confirmation, no replay, and guard release after

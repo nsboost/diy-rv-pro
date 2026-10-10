@@ -342,7 +342,7 @@ function HvacSettingsDialog({ zone, onClose, onSave }) {
             </select>
           </Field>
           <Field label="Current Temp">
-            <input value={`${zone.tempF} F`} disabled />
+            <input value={zone.tempF == null ? 'Unavailable' : `${zone.tempF} F`} disabled />
           </Field>
           <Field label="AC Set Point">
             <input required type="number" min="50" max="95" step="1" value={draft.coolSetpointF} onChange={event => update('coolSetpointF', event.target.value)} />
