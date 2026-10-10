@@ -84,6 +84,15 @@ recovery tests remain outstanding.
   are distinct paths. Initialization-failure and power-loss bench checks remain open.
 - [ ] Exercise pending save/delete/acknowledgement and keyboard/backdrop dismissal
   with delayed live requests.
+  Production-browser save and delete have now been exercised through a local
+  loopback fixture that delays control responses by eight seconds. During each
+  pending request, the editor stayed open after Escape, its fields and Cancel
+  were disabled, and save/close controls were disabled as applicable. After server
+  confirmation, the dialog closed and the saved/deleted rule and matching event
+  were visible. No captured console errors occurred during the save. This is
+  simulated HTTP evidence, not ESP32 evidence. Acknowledgement, HVAC saves,
+  backdrop dismissal and failure-path UI checks remain open. The fixture tab and
+  server were closed; the standalone demo inventory was unchanged.
   A shared command guard now rejects overlapping dashboard, HVAC, automation and
   device acknowledgement requests without sending or queuing the second action.
   Regression tests cover deferred confirmation, no replay, and guard release after
