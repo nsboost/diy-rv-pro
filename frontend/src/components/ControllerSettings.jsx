@@ -1,3 +1,4 @@
+import { clearAdminToken } from '../api/authStorage.js'
 import { requestControllerJson } from '../api/controllerRequest.js'
 import { useEffect, useState } from 'react'
 import { fetchConfig, getAdminToken, saveConfig } from '../api/telemetryClient.js'
@@ -41,7 +42,7 @@ export default function ControllerSettings({ telemetry, apiOnline, onProfile, on
       <label className="config-field"><span>Admin token</span><input type={showToken ? 'text' : 'password'} autoComplete="off" value={token} onChange={event => setToken(event.target.value)} /></label>
       <label className="inline-check"><input type="checkbox" checked={showToken} onChange={event => setShowToken(event.target.checked)} />Show token for secure recording</label>
       <label className="inline-check"><input type="checkbox" checked={remember} onChange={event => setRemember(event.target.checked)} />Remember on this browser</label>
-      <div className="config-toolbar"><button className="primary-action" disabled={busy} type="submit">Connect</button><button className="secondary-action" type="button" disabled={busy} onClick={() => run(async () => {await refresh();setMessage('Controller status refreshed.')})}>Refresh Status</button><button className="secondary-action" type="button" onClick={() => {window.sessionStorage.removeItem('diy-rv-admin-token');window.localStorage.removeItem('diy-rv-admin-token');setConfig(null);setMessage('Signed out. Controller rules continue running.')}}>Sign Out</button></div>
+      <div className="config-toolbar"><button className="primary-action" disabled={busy} type="submit">Connect</button><button className="secondary-action" type="button" disabled={busy} onClick={() => run(async () => {await refresh();setMessage('Controller status refreshed.')})}>Refresh Status</button><button className="secondary-action" type="button" disabled={busy} onClick={() => run(async () => {clearAdminToken([() => window.sessionStorage, () => window.localStorage]);setConfig(null);setToken('');setMessage('Signed out. Controller rules continue running.')})}>Sign Out</button></div>
     </form>
     {status && (!status.setupComplete || config) && <form className="settings-form" onSubmit={event => {event.preventDefault();run(async () => {
       const firstBoot = !status.setupComplete
