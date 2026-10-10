@@ -83,12 +83,13 @@ recovery tests remain outstanding.
   with a diagnostic; readable-record API recovery and partition-level maintenance
   are distinct paths. Initialization-failure and power-loss bench checks remain open.
 - [ ] Exercise pending save/delete/acknowledgement and keyboard/backdrop dismissal
+  with delayed live requests.
   A shared command guard now rejects overlapping dashboard, HVAC, automation and
   device acknowledgement requests without sending or queuing the second action.
   Regression tests cover deferred confirmation, no replay, and guard release after
   asynchronous and synchronous failures. All 112 frontend tests and the production
   build pass. Delayed on-device UI verification remains open.
-  with delayed live requests. Idle browser flows passed; pending behavior is
+  Idle browser flows passed; pending behavior is
   currently implementation-inspected and request-helper tested. Dialog fields now
   use a disabled fieldset during pending HVAC/automation operations so users cannot
   edit a different draft while its earlier version is being saved. Idle browser
