@@ -23,7 +23,7 @@ The system combines:
 
 ## Target Hardware
 Primary controller target:
-- ESP32-C3
+- ESP32-S3
 
 Planned interfaces:
 - 7 inch touchscreen

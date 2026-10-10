@@ -1,0 +1,14 @@
+node_modules/
+*.log
+frontend/demo-*.png
+.vscode/mcp.json
+firmware/esp32-s3/managed_components/
+frontend/dist/
+firmware/esp32-c3/.pio/
+firmware/esp32-c3/data/assets/
+firmware/esp32-c3/data/index.html
+firmware/esp32-s3/.pio/
+firmware/esp32-s3/data/assets/
+firmware/esp32-s3/data/index.html
+firmware/esp32-s3/sdkconfig.*
+!firmware/esp32-s3/sdkconfig.defaults

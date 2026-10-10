@@ -1,6 +1,6 @@
 const interfaces = [
   {
-    name: 'ESP32-C3 Main Controller',
+    name: 'ESP32-S3 Main Controller',
     status: 'Connected'
   },
   {

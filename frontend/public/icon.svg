@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">DIY RV PRO</title>
+  <rect width="512" height="512" rx="96" fill="#07111e"/>
+  <rect x="46" y="56" width="420" height="400" rx="58" fill="#0f2033" stroke="#2a4666" stroke-width="10"/>
+  <path d="M108 278h232c38 0 68 30 68 68v34H108z" fill="#132a43" stroke="#43c4ff" stroke-width="10"/>
+  <path d="M134 178h164l66 100H108z" fill="#173b5d" stroke="#43c4ff" stroke-width="10"/>
+  <path d="M164 210h88l34 50H144z" fill="#07111e" stroke="#2a4666" stroke-width="8"/>
+  <circle cx="166" cy="384" r="34" fill="#02070d" stroke="#f5f8fc" stroke-width="12"/>
+  <circle cx="346" cy="384" r="34" fill="#02070d" stroke="#f5f8fc" stroke-width="12"/>
+  <path d="M362 138l-46 76h56l-34 86 82-112h-58l42-50z" fill="#ffb000"/>
+  <text x="256" y="112" fill="#f5f8fc" font-family="Arial, sans-serif" font-size="54" font-weight="900" text-anchor="middle">DIY RV</text>
+  <text x="256" y="160" fill="#ffb000" font-family="Arial, sans-serif" font-size="42" font-weight="900" text-anchor="middle">PRO</text>
+</svg>
