@@ -5,6 +5,14 @@ acceptance checklist, not a completion claim. Local baseline: 91 frontend
 regressions and production build passed; 27 firmware host tests and ESP32-S3
 build passed. Physical-controller behavior remains unverified.
 
+October 10 follow-up: 103 frontend tests and the production build pass.
+The browser permission flow was exercised in the local demo: an unanswered
+permission request releases the disabled control after 30 seconds, retains
+browser delivery as off and displays retry guidance. Late permission completion
+does not silently save an enabled preference. Actual OS delivery still requires
+a granted permission and remains unverified. Mobile navigation backdrop dismissal
+was also verified after correcting the misplaced pending-dialog guard.
+
 | Requirement | Current evidence | Remaining acceptance work |
 | --- | --- | --- |
 | GPIO inventory and addressed zone selection | Validator, inventory editor, address-specific mappings and host regressions; two-zone populated demo | Verify physical bus wiring, selected ROM addresses and independent zones on ESP32 |

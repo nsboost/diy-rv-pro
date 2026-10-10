@@ -1,4 +1,5 @@
 import { notificationTimeLabel } from '../api/notificationTime.js'
+import { requestNotificationPermission } from '../api/notificationPermission.js'
 import { useState } from 'react'
 
 export default function NotificationsPanel({ telemetry, onAcknowledge, onSettings }) {
@@ -31,9 +32,9 @@ export default function NotificationsPanel({ telemetry, onAcknowledge, onSetting
           if (typeof Notification === 'undefined') { setPermissionMessage('Browser notifications are unavailable in this browser.'); return }
           setRequestingPermission(true)
           try {
-            const permission = await Notification.requestPermission()
+            const permission = await requestNotificationPermission(Notification)
             if (permission !== 'granted') { setPermissionMessage('Notifications were not enabled. Allow notifications in browser settings to try again.'); return }
-          } catch { setPermissionMessage('Browser notification permission could not be requested.'); return }
+          } catch (error) { setPermissionMessage(error.message || 'Browser notification permission could not be requested.'); return }
           finally { setRequestingPermission(false) }
         }
         setPermissionMessage('')
