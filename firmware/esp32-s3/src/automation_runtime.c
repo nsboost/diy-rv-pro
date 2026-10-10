@@ -287,6 +287,19 @@ finish:
 }
 void automation_runtime_append(cJSON *telemetry) {
   xSemaphoreTake(lock, portMAX_DELAY);
+  cJSON *runtime = cJSON_CreateObject();
+  for (size_t i = 0; i < DIY_AUTOMATION_MAX_RULES; ++i) {
+    const automation_rule_state_t *state = &engine.rules[i];
+    if (!state->id[0]) continue;
+    cJSON *item = cJSON_CreateObject();
+    cJSON_AddBoolToObject(item, "active", state->active);
+    cJSON_AddBoolToObject(item, "holding", state->holding);
+    cJSON_AddBoolToObject(item, "sourceAvailable", state->input_available);
+    if (state->retry_ms) cJSON_AddStringToObject(item, "error", "Action failed; review notifications. Retrying.");
+    cJSON_AddItemToObject(runtime, state->id, item);
+  }
+  cJSON_DeleteItemFromObjectCaseSensitive(telemetry, "ruleRuntime");
+  cJSON_AddItemToObject(telemetry, "ruleRuntime", runtime);
   cJSON_DeleteItemFromObjectCaseSensitive(telemetry, "automationRules");
   cJSON_AddItemToObject(telemetry, "automationRules",
                         cJSON_Duplicate(rules, true));

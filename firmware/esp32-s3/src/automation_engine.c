@@ -288,6 +288,7 @@ void automation_engine_tick(automation_engine_t *engine, const cJSON *rules,
     const cJSON *trigger = get(rule, "trigger"),
                 *reverse = get(rule, "reverse");
     const cJSON *value = get(sources, str(trigger, "source"));
+    state->input_available = available(value);
     bool matches = compare(trigger, value, state->previous);
     remember(&state->previous, value);
     restoring[slot] = state->active && cJSON_IsTrue(get(reverse, "enabled"));

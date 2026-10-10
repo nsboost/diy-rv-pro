@@ -19,6 +19,7 @@ import { demoProfile, demoReadings } from './data/demoProfile.js'
 import { projectTelemetry } from './api/profileTelemetry.js'
 import { controlSystems, sourceCatalog } from './config/automationCatalog.js'
 import { loadNotificationSettings } from './api/notificationSettings.js'
+import { ruleStatus } from './api/ruleStatus.js'
 import SetupWizard from './components/SetupWizard.jsx'
 import { defaultSystemProfile, normalizeSystemProfile } from './config/systemProfile.js'
 
@@ -816,7 +817,7 @@ function EventsPanel({ events }) {
   )
 }
 
-function AutomationPanel({ rules, onDispatch, onEdit, onCreate }) {
+function AutomationPanel({ rules, runtime, onDispatch, onEdit, onCreate }) {
   return (
     <section className="panel automation-panel" id="section-automation">
       <div className="panel-heading compact-heading">
@@ -829,6 +830,7 @@ function AutomationPanel({ rules, onDispatch, onEdit, onCreate }) {
           <button className="automation-copy" onClick={() => onEdit(rule)} type="button">
             <strong>{rule.name}</strong>
             <span>{rule.detail}</span>
+            <small>{ruleStatus(rule, runtime?.[rule.id])}</small>
             <small>{rule.action?.commandLabel || rule.action?.command || 'Control'} {'->'} {rule.action?.targetLabel || rule.action?.target || 'Controller'}</small>
           </button>
           <button
@@ -1099,6 +1101,7 @@ export default function App() {
         <EventsPanel events={telemetry.events} />
         <AutomationPanel
           rules={telemetry.automationRules}
+          runtime={telemetry.ruleRuntime}
           onDispatch={action => { dispatch(action).catch(() => {}) }}
           onEdit={setEditingAutomationRule}
           onCreate={() => setCreatingAutomation(true)}
@@ -1211,6 +1214,7 @@ export default function App() {
           <div className="page-grid page-grid-automation">
             <AutomationPanel
               rules={telemetry.automationRules}
+              runtime={telemetry.ruleRuntime}
               onDispatch={action => { dispatch(action).catch(() => {}) }}
               onEdit={setEditingAutomationRule}
               onCreate={() => setCreatingAutomation(true)}

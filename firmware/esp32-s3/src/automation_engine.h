@@ -11,6 +11,7 @@ typedef struct {
   char id[33];
   bool active;
   bool holding;
+  bool input_available;
   uint64_t since_ms;
   uint64_t retry_ms;
   cJSON *previous;

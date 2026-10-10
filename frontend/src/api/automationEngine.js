@@ -92,6 +92,7 @@ export function evaluateRules(rules, telemetry, runtime, now) {
     try {
       validateCondition(rule.trigger)
       const value = readAutomationSource(telemetry, rule.trigger.source, now)
+      state.sourceAvailable = value !== undefined && value !== null && (typeof value !== 'number' || Number.isFinite(value))
       const matches = compareCondition(rule.trigger, value, state.previous)
       state.previous = value
       if (state.active && rule.reverse?.enabled) {
