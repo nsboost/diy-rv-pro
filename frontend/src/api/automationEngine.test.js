@@ -366,3 +366,11 @@ test('security contact sources preserve false and reject stale or unhealthy read
   telemetry.securityInputs[0].status = 'stale'
   assert.equal(readAutomationSource(telemetry,'security.door.active',2000),undefined)
 })
+
+test('hardware schedules never fall back to browser time when controller clock is missing',()=>{
+  assert.equal(readAutomationSource({controller:{mode:'device'}},'time.local',0),undefined)
+  assert.equal(readAutomationSource({controller:{mode:'device'},localMinute:0},'time.local',0),0)
+  assert.equal(readAutomationSource({controller:{mode:'device'},localMinute:1439},'time.local',0),1439)
+  for (const localMinute of [null,-1,1440,2.5,'100',NaN]) assert.equal(readAutomationSource({localMinute},'time.local',0),undefined)
+  assert.equal(typeof readAutomationSource({controller:{mode:'simulation'}},'time.local',0),'number')
+})

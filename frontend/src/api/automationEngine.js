@@ -65,8 +65,12 @@ export function compareCondition(condition, value, previous) {
 }
 
 export function readAutomationSource(telemetry, source, now) {
-  if (source === 'time.local' && Number.isFinite(telemetry.localMinute)) return telemetry.localMinute
-  if (source === 'time.local') { const time = new Date(now); return time.getHours() * 60 + time.getMinutes() }
+  if (source === 'time.local') {
+    if (Number.isInteger(telemetry.localMinute) && telemetry.localMinute >= 0 && telemetry.localMinute < 1440) return telemetry.localMinute
+    if (telemetry.controller?.mode === 'device' || telemetry.localMinute !== undefined) return undefined
+    const time = new Date(now)
+    return time.getHours() * 60 + time.getMinutes()
+  }
   const parts = source.split('.')
   if (parts[0] === 'security') {
     const reading = telemetry.securityInputs?.find(sensor => sensor.id === parts[1])
