@@ -1,3 +1,4 @@
+import { confirmedControl } from './api/confirmedControl.js'
 import { conditionOperators } from './api/automationEngine.js'
 import { mapSecurityInputs } from './api/mapSecurityInputs.js'
 import { mapDiscoveredTemperatures } from './api/mapDiscoveredTemperatures.js'
@@ -1056,8 +1057,7 @@ export default function App() {
       if (snapshot.controller.mode === 'device' || !import.meta.env.DEV || token) {
         if (!apiOnline) throw new Error('Controller disconnected. Command was not sent.')
         if (!token) throw new Error('Sign in before sending a control command.')
-        await pushControlAction(action, token)
-        const confirmed = await fetchTelemetry()
+        const confirmed = await confirmedControl(action, token, pushControlAction, fetchTelemetry)
         setTelemetry({ ...confirmed, controller: { ...confirmed.controller, mode: 'device', online: true } })
       } else setTelemetry(controller.dispatch(action))
     } catch (error) { setControlError(error.message); throw error }

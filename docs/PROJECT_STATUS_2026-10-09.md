@@ -341,3 +341,7 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 ### Keyboard dismissal respects pending operations (October 10)
 - Removed the application-level Escape handler that bypassed pending HVAC/automation dialog guards. Each modal now handles Escape using its current busy state; idle dialogs retain keyboard dismissal.
 - Validation: 85 frontend tests and production build passed. Browser verification opened an existing automation and dismissed it with Escape without saving changes. Pending-device behavior remains implementation-inspected until delayed controller requests can be exercised.
+
+### Accepted commands with failed telemetry confirmation (October 10)
+- Device command dispatch distinguishes controller rejection from successful command acknowledgement followed by failed telemetry refresh. The latter explicitly reports acceptance and asks the operator to verify state before resending; it never automatically repeats the mutation. Confirmation uses the same token as the command.
+- Validation: 88 frontend tests and production build passed. New tests exercise accepted/failed confirmation, rejected commands without a follow-up read, and authenticated successful confirmation. This request-level fault simulation does not establish physical equipment operation.
