@@ -42,3 +42,5 @@ void automation_engine_tick(automation_engine_t *engine, const cJSON *rules,
 // Caller owns the export. Restore validates everything before mutating engine.
 cJSON *automation_engine_export_activation(const automation_engine_t *engine, const cJSON *rules);
 bool automation_engine_restore_activation(automation_engine_t *engine, const cJSON *rules, const cJSON *active_ids);
+
+bool automation_validate_activation(const cJSON *rules, const cJSON *active_ids);

@@ -385,3 +385,9 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 - 26 firmware host tests passed. New regression restores activation into a fresh engine, survives missing input and same-condition recovery without delivery, then rearms on a healthy recovery and fires again on a new trigger.
 - These helpers are not yet connected to NVS. Remaining work is atomic activation-plus-notification persistence, saved-state version migration, rule-edit consistency and hardware reboot/fault verification. Actual reboot persistence is not claimed.
 - ESP32-S3 build passed: static RAM 77,872 bytes; flash 994,613 bytes. No hardware flashed.
+
+### Firmware activation persistence integration (October 10)
+- Saved-state version 2 includes validated activeRuleIds. Version 1 remains readable without inventing activation history; new writes migrate to version 2. Startup restores activation after profile initialization and never restores uptime timers or previous samples.
+- Alert execution commits its notification and projected activation/restore transition in one NVS blob before reporting success. Rule edits/deletion clear the affected activation in the saved transaction; acknowledgements preserve it. Evaluator rearming and input-configuration reset changes are persisted; a failed background activation write disables automation and reports a storage fault.
+- 27 firmware host tests passed, including version-1 acceptance, version-2 required activation structure, duplicate/unknown rejection, and simulated fresh-engine recovery. Real NVS atomicity, power interruption, memory exhaustion and physical reboot workflows remain unverified.
+- ESP32-S3 build passed: static RAM 77,872 bytes; flash 995,673 bytes. No hardware flashed.

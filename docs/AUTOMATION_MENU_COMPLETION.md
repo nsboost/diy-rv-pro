@@ -17,8 +17,9 @@ build passed. Physical-controller behavior remains unverified.
 ## Remaining implementation and verification
 
 - [ ] Persist successful alert activation together with its notification in one
-  NVS state transaction. `automation_runtime.c:save_state` currently saves only
-  rules and notifications; RAM activation is lost at startup. A steady condition
+  NVS state transaction. Version-2 runtime storage now saves activation with notifications and restores
+  it at startup; host tests cover validation and fresh-engine behavior. Physical
+  NVS transactions and interrupted-write behavior still need verification. A steady condition
   must not send another alert solely because the controller restarts. Restore
   actions, rule edits/deletion, old-state migration and failed writes need tests.
 - [ ] Keep monotonic hold/retry timers separate from persisted activation. A saved

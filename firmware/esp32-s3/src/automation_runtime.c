@@ -26,19 +26,33 @@ static const char *text(const cJSON *obj, const char *key) {
   const cJSON *v = cJSON_GetObjectItemCaseSensitive(obj, key);
   return cJSON_IsString(v) ? v->valuestring : "";
 }
-static esp_err_t save_state(const cJSON *next_rules, const cJSON *next_alerts) {
+static esp_err_t save_state(const cJSON *next_rules, const cJSON *next_alerts, const char *transition_id, bool active) {
   if (storage_fault)
     return ESP_ERR_INVALID_STATE;
   cJSON *root = cJSON_CreateObject();
   cJSON *rules_copy = cJSON_Duplicate(next_rules, true);
   cJSON *alerts_copy = cJSON_Duplicate(next_alerts, true);
-  if (!root || !rules_copy || !alerts_copy) {
+  cJSON *activation = automation_engine_export_activation(&engine, next_rules);
+  if (activation && transition_id) {
+    for (int i = cJSON_GetArraySize(activation) - 1; i >= 0; i--)
+      if (!strcmp(cJSON_GetArrayItem(activation, i)->valuestring, transition_id))
+        cJSON_DeleteItemFromArray(activation, i);
+    if (active) {
+      cJSON *id = cJSON_CreateString(transition_id);
+      if (!id || !cJSON_AddItemToArray(activation, id)) {
+        cJSON_Delete(id); cJSON_Delete(activation); activation = NULL;
+      }
+    }
+  }
+  if (!root || !rules_copy || !alerts_copy || !activation) {
     cJSON_Delete(root);
     cJSON_Delete(rules_copy);
     cJSON_Delete(alerts_copy);
+    cJSON_Delete(activation);
     return ESP_ERR_NO_MEM;
   }
-  cJSON_AddNumberToObject(root, "version", 1);
+  cJSON_AddNumberToObject(root, "version", 2);
+  cJSON_AddItemToObject(root, "activeRuleIds", activation);
   cJSON_AddItemToObject(root, "rules", rules_copy);
   cJSON_AddItemToObject(root, "notifications", alerts_copy);
   char *payload = cJSON_PrintUnformatted(root);
@@ -61,7 +75,7 @@ static esp_err_t save_state(const cJSON *next_rules, const cJSON *next_alerts) {
   return result;
 }
 static bool alert(const char *message, const char *rule_id,
-                  const char *severity) {
+                  const char *severity, const char *transition_id, bool active) {
   cJSON *next = cJSON_Duplicate(alerts, true), *item = cJSON_CreateObject();
   if (!next || !item) {
     cJSON_Delete(next);
@@ -82,7 +96,7 @@ static bool alert(const char *message, const char *rule_id,
   cJSON_InsertItemInArray(next, 0, item);
   while (cJSON_GetArraySize(next) > 64)
     cJSON_DeleteItemFromArray(next, 64);
-  if (save_state(rules, next) != ESP_OK) {
+  if (save_state(rules, next, transition_id, active) != ESP_OK) {
     cJSON_Delete(next);
     return false;
   }
@@ -97,7 +111,7 @@ static bool execute(const cJSON *rule, const cJSON *action, bool restoring,
       !strcmp(text(action, "target"), "notification")) {
     const char *message = text(action, restoring ? "restoreValue" : "value");
     return alert(*message ? message : text(rule, "name"), text(rule, "id"),
-                 "info");
+                 "info", text(rule, "id"), !restoring);
   }
   // A logical relay number is not a commissioned output driver. Report the gap,
   // retain pending activation, and retry rather than claiming physical success.
@@ -113,7 +127,7 @@ static bool execute(const cJSON *rule, const cJSON *action, bool restoring,
                   !strcmp(text(existing, "message"), message))
       already_reported = true;
   if (!already_reported)
-    alert(message, text(rule, "id"), "warning");
+    alert(message, text(rule, "id"), "warning", NULL, false);
   return false;
 }
 static cJSON *source_values(void) {
@@ -134,10 +148,15 @@ static void task(void *context) {
   for (;;) {
     xSemaphoreTake(lock, portMAX_DELAY);
     if (configured && !storage_fault) {
+      cJSON *before = automation_engine_export_activation(&engine, rules);
       cJSON *sources = source_values();
       automation_engine_tick(&engine, rules, sources,
                              esp_timer_get_time() / 1000, execute, NULL);
       cJSON_Delete(sources);
+      cJSON *after = automation_engine_export_activation(&engine, rules);
+      if (!before || !after || (!cJSON_Compare(before, after, true) &&
+          save_state(rules, alerts, NULL, false) != ESP_OK)) storage_fault = true;
+      cJSON_Delete(before); cJSON_Delete(after);
     }
     xSemaphoreGive(lock);
     vTaskDelay(pdMS_TO_TICKS(1000));
@@ -153,12 +172,16 @@ void automation_runtime_configure(const diy_config_t *config) {
   if (!next)
     return;
   xSemaphoreTake(lock, portMAX_DELAY);
+  bool had_profile = profile != NULL;
   bool reset = configured != config->setup_complete ||
       automation_input_configuration_changed(profile, next);
   cJSON_Delete(profile);
   profile = next;
   configured = config->setup_complete;
-  if (reset) automation_engine_reset(&engine);
+  if (reset) {
+    automation_engine_reset(&engine);
+    if (had_profile && save_state(rules, alerts, NULL, false) != ESP_OK) storage_fault = true;
+  }
   xSemaphoreGive(lock);
 }
 esp_err_t automation_runtime_start(const diy_config_t *config) {
@@ -169,6 +192,7 @@ esp_err_t automation_runtime_start(const diy_config_t *config) {
   alerts = cJSON_CreateArray();
   if (!rules || !alerts)
     return ESP_ERR_NO_MEM;
+  cJSON *loaded_activation = NULL;
   nvs_handle_t handle;
   storage_fault = true;
   esp_err_t opened = nvs_open("rv_automation", NVS_READONLY, &handle);
@@ -192,7 +216,11 @@ esp_err_t automation_runtime_start(const diy_config_t *config) {
         if (automation_validate_saved_state(saved, error, sizeof(error))) {
           cJSON *loaded_rules = cJSON_Duplicate(saved_rules, true);
           cJSON *loaded_alerts = cJSON_Duplicate(saved_alerts, true);
-          if (loaded_rules && loaded_alerts) {
+          const cJSON *activation = cJSON_GetObjectItemCaseSensitive(saved, "activeRuleIds");
+          if (cJSON_GetObjectItemCaseSensitive(saved, "version")->valuedouble == 2)
+            loaded_activation = cJSON_Duplicate(activation, true);
+          if (loaded_rules && loaded_alerts &&
+              (cJSON_GetObjectItemCaseSensitive(saved, "version")->valuedouble == 1 || loaded_activation)) {
             cJSON_Delete(rules);
             cJSON_Delete(alerts);
             rules = loaded_rules;
@@ -214,6 +242,9 @@ esp_err_t automation_runtime_start(const diy_config_t *config) {
     nvs_close(handle);
   }
   automation_runtime_configure(config);
+  if (loaded_activation && !automation_engine_restore_activation(&engine, rules, loaded_activation))
+    storage_fault = true;
+  cJSON_Delete(loaded_activation);
   return xTaskCreate(task, "automation", 6144, NULL, 3, NULL) == pdPASS
              ? ESP_OK
              : ESP_ERR_NO_MEM;
@@ -285,7 +316,9 @@ bool automation_runtime_control(const cJSON *command, char *error,
   }
   if (success)
     success = automation_validate_rules(next_rules, error, error_len);
-  if (success && save_state(next_rules, next_alerts) != ESP_OK) {
+  if (success && save_state(next_rules, next_alerts,
+      !strcmp(type, "notification.acknowledge") ? NULL :
+      !strcmp(type, "automation.upsert") ? text(cJSON_GetObjectItemCaseSensitive(command, "rule"), "id") : id, false) != ESP_OK) {
     snprintf(error, error_len,
              "Controller storage failed; changes were not applied");
     success = false;

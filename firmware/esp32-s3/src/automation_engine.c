@@ -190,11 +190,13 @@ bool automation_validate_saved_state(const cJSON *state, char *error,
   const cJSON *version = get(state, "version"),
               *alerts = get(state, "notifications");
   if (!cJSON_IsObject(state) || !cJSON_IsNumber(version) ||
-      version->valuedouble != 1 || !cJSON_IsArray(alerts) ||
+      (version->valuedouble != 1 && version->valuedouble != 2) || !cJSON_IsArray(alerts) ||
       cJSON_GetArraySize(alerts) > 64)
     goto invalid;
   if (!automation_validate_rules(get(state, "rules"), error, error_len))
     return false;
+  if (version->valuedouble == 2 && !automation_validate_activation(get(state, "rules"), get(state, "activeRuleIds")))
+    goto invalid;
   const cJSON *item;
   cJSON_ArrayForEach(item, alerts) {
     const cJSON *uptime = get(item, "uptimeMs");
@@ -417,8 +419,8 @@ cJSON *automation_engine_export_activation(const automation_engine_t *engine, co
   }
   return active;
 }
-bool automation_engine_restore_activation(automation_engine_t *engine, const cJSON *rules, const cJSON *active_ids) {
-  if (!engine || !cJSON_IsArray(active_ids) || cJSON_GetArraySize(active_ids) > DIY_AUTOMATION_MAX_RULES ||
+bool automation_validate_activation(const cJSON *rules, const cJSON *active_ids) {
+  if (!cJSON_IsArray(active_ids) || cJSON_GetArraySize(active_ids) > DIY_AUTOMATION_MAX_RULES ||
       !automation_validate_rules(rules, NULL, 0)) return false;
   const cJSON *id;
   cJSON_ArrayForEach(id, active_ids) {
@@ -427,8 +429,13 @@ bool automation_engine_restore_activation(automation_engine_t *engine, const cJS
     for (const cJSON *other = id->next; other; other = other->next)
       if (cJSON_IsString(other) && !strcmp(id->valuestring, other->valuestring)) return false;
   }
+  return true;
+}
+bool automation_engine_restore_activation(automation_engine_t *engine, const cJSON *rules, const cJSON *active_ids) {
+  if (!engine || !automation_validate_activation(rules, active_ids)) return false;
   automation_engine_reset(engine);
   size_t slot = 0;
+  const cJSON *id;
   cJSON_ArrayForEach(id, active_ids) {
     snprintf(engine->rules[slot].id, sizeof(engine->rules[slot].id), "%s", id->valuestring);
     engine->rules[slot++].active = true;

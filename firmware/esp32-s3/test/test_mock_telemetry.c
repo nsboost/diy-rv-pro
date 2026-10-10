@@ -316,6 +316,25 @@ static bool execute_test_rule(const cJSON *rule,const cJSON *action,bool restori
 static cJSON *temperature_rules(void) {
     return cJSON_Parse("[{\"id\":\"temp-alert\",\"name\":\"Bedroom warm\",\"enabled\":true,\"trigger\":{\"source\":\"temperature.bedroom.tempF\",\"operator\":\">\",\"value\":\"75\",\"holdFor\":\"5 sec\"},\"action\":{\"target\":\"notification\",\"command\":\"sendAlert\",\"value\":\"Bedroom warm\"},\"reverse\":{\"enabled\":true,\"source\":\"temperature.bedroom.tempF\",\"operator\":\"<\",\"value\":\"72\",\"target\":\"notification\",\"command\":\"sendAlert\",\"restoreValue\":\"Recovered\"}}]");
 }
+static void test_saved_activation_versions_and_references(void) {
+    cJSON *saved=cJSON_CreateObject(); char error[96];
+    cJSON_AddNumberToObject(saved,"version",1);
+    cJSON_AddItemToObject(saved,"rules",temperature_rules());
+    cJSON_AddItemToObject(saved,"notifications",cJSON_CreateArray());
+    TEST_ASSERT_TRUE(automation_validate_saved_state(saved,error,sizeof(error)));
+    cJSON_ReplaceItemInObjectCaseSensitive(saved,"version",cJSON_CreateNumber(2));
+    TEST_ASSERT_FALSE(automation_validate_saved_state(saved,error,sizeof(error)));
+    cJSON_AddItemToObject(saved,"activeRuleIds",cJSON_Parse("[\"temp-alert\"]"));
+    TEST_ASSERT_TRUE(automation_validate_saved_state(saved,error,sizeof(error)));
+    cJSON_AddItemToArray(cJSON_GetObjectItemCaseSensitive(saved,"activeRuleIds"),cJSON_CreateString("temp-alert"));
+    TEST_ASSERT_FALSE(automation_validate_saved_state(saved,error,sizeof(error)));
+    cJSON_ReplaceItemInObjectCaseSensitive(saved,"activeRuleIds",cJSON_Parse("[\"unknown\"]"));
+    TEST_ASSERT_FALSE(automation_validate_saved_state(saved,error,sizeof(error)));
+    cJSON_ReplaceItemInObjectCaseSensitive(saved,"activeRuleIds",cJSON_CreateArray());
+    TEST_ASSERT_TRUE(automation_validate_saved_state(saved,error,sizeof(error)));
+    cJSON_Delete(saved);
+}
+
 static void test_activation_restore_excludes_timers_and_rejects_invalid_ids(void) {
     automation_engine_t original={0}, rebooted={0};
     cJSON *rules=temperature_rules();
@@ -632,6 +651,7 @@ void app_main(void)
 #endif
 {
     UNITY_BEGIN();
+    RUN_TEST(test_saved_activation_versions_and_references);
     RUN_TEST(test_activation_restore_excludes_timers_and_rejects_invalid_ids);
     RUN_TEST(test_active_alert_survives_unavailable_input_without_duplicate);
     RUN_TEST(test_unrelated_profile_edits_preserve_automation_inputs);
