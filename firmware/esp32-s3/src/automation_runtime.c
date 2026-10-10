@@ -51,10 +51,20 @@ static esp_err_t save_state(const cJSON *next_rules, const cJSON *next_alerts, c
     cJSON_Delete(activation);
     return ESP_ERR_NO_MEM;
   }
-  cJSON_AddNumberToObject(root, "version", 2);
-  cJSON_AddItemToObject(root, "activeRuleIds", activation);
-  cJSON_AddItemToObject(root, "rules", rules_copy);
-  cJSON_AddItemToObject(root, "notifications", alerts_copy);
+  bool assembled = cJSON_AddNumberToObject(root, "version", 2) != NULL;
+  if (assembled && cJSON_AddItemToObject(root, "activeRuleIds", activation)) activation = NULL;
+  else assembled = false;
+  if (assembled && cJSON_AddItemToObject(root, "rules", rules_copy)) rules_copy = NULL;
+  else assembled = false;
+  if (assembled && cJSON_AddItemToObject(root, "notifications", alerts_copy)) alerts_copy = NULL;
+  else assembled = false;
+  cJSON_Delete(activation);
+  cJSON_Delete(rules_copy);
+  cJSON_Delete(alerts_copy);
+  if (!assembled || !automation_validate_saved_state(root, NULL, 0)) {
+    cJSON_Delete(root);
+    return assembled ? ESP_ERR_INVALID_STATE : ESP_ERR_NO_MEM;
+  }
   char *payload = cJSON_PrintUnformatted(root);
   cJSON_Delete(root);
   if (!payload)

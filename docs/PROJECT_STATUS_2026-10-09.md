@@ -391,3 +391,8 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 - Alert execution commits its notification and projected activation/restore transition in one NVS blob before reporting success. Rule edits/deletion clear the affected activation in the saved transaction; acknowledgements preserve it. Evaluator rearming and input-configuration reset changes are persisted; a failed background activation write disables automation and reports a storage fault.
 - 27 firmware host tests passed, including version-1 acceptance, version-2 required activation structure, duplicate/unknown rejection, and simulated fresh-engine recovery. Real NVS atomicity, power interruption, memory exhaustion and physical reboot workflows remain unverified.
 - ESP32-S3 build passed: static RAM 77,872 bytes; flash 995,673 bytes. No hardware flashed.
+
+### Validate complete NVS records before writing (October 10)
+- Automation persistence now checks each JSON field attachment, frees unowned copies on failure, and validates the fully assembled versioned state before serialization/NVS writes. Failed allocation cannot intentionally replace the saved blob with a missing version, rules, notifications or activation field.
+- Runtime allocation-failure injection remains required; portable saved-state validation tests cover missing/malformed fields but do not execute NVS or the runtime allocator path.
+- All 27 firmware host tests and ESP32-S3 build passed: static RAM 77,872 bytes; flash 995,769 bytes. No hardware flashed.
