@@ -41,6 +41,8 @@ test('manual HVAC modes respect output interlocks and Off clears active equipmen
   const now = Date.now()
   controller.setReadings(demoReadings(now))
   controller.dispatch({type:'hvac.setMode',zoneId:'zone-1',mode:'Off'})
+  assert.throws(() => controller.dispatch({type:'hvac.setMode',zoneId:'zone-1',mode:'Heat'}), /assigned equipment output/)
+  assert.throws(() => controller.dispatch({type:'hvac.setMode',zoneId:'zone-1',mode:'Fan'}), /assigned equipment output/)
   controller.dispatch({type:'automation.upsert',rule:{id:'block-cooling',name:'Block cooling',enabled:true,trigger:{source:'battery.voltage',operator:'>',value:'0',holdFor:'0 sec'},action:{type:'block',target:'hvac.zone-1.ac',command:'blockOn'},reverse:{enabled:false}}})
   controller.tick(now)
   assert.throws(() => controller.dispatch({type:'hvac.setMode',zoneId:'zone-1',mode:'Cool'}), /active blocking rule/)

@@ -5,6 +5,7 @@ import { evaluateRules, validateCondition, durationMs } from './automationEngine
 import { controlSystems } from '../config/automationCatalog.js'
 import { validateProfile } from '../config/validateProfile.js'
 import { normalizeNotificationSettings } from './notificationSettings.js'
+import { availableHvacModes } from '../config/hvacCapabilities.js'
 
 const CONTROL_ENDPOINT = '/api/control'
 const CONFIG_ENDPOINT = '/api/config'
@@ -267,6 +268,7 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
           const modeChange = mode !== undefined || action.type === 'hvac.toggleEquipment' && action.equipment === 'auto'
           if (modeChange) {
             const effectiveMode = mode || (zone.auto ? 'Off' : 'Auto')
+            if (!availableHvacModes(zone).includes(effectiveMode)) throw new Error('HVAC mode requires an assigned equipment output')
             const outputs = {Cool:['ac','heatPump'],Heat:['furnace','heatPump'],Fan:['fan'],Auto:['ac','furnace','heatPump','fan'],Off:['ac','furnace','heatPump','fan']}[effectiveMode] || []
             for (const equipment of outputs) {
               const output = `hvac.${zone.id}.${equipment}`

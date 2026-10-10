@@ -20,6 +20,7 @@ import { projectTelemetry } from './api/profileTelemetry.js'
 import { controlSystems, sourceCatalog } from './config/automationCatalog.js'
 import { loadNotificationSettings } from './api/notificationSettings.js'
 import { ruleStatus } from './api/ruleStatus.js'
+import { availableHvacModes } from './config/hvacCapabilities.js'
 import SetupWizard from './components/SetupWizard.jsx'
 import { defaultSystemProfile, normalizeSystemProfile } from './config/systemProfile.js'
 
@@ -36,7 +37,6 @@ const navItems = [
   ['setup', 'Setup Wizard', 'wand']
 ]
 
-const hvacModes = ['Off', 'Cool', 'Heat', 'Auto', 'Fan']
 const automationOperators = ['=', '!=', '>', '>=', '<', '<=', 'between', 'outside', 'changes']
 
 const automationCommands = {
@@ -310,6 +310,7 @@ function HvacSettingsDialog({ zone, onClose, onSave }) {
     <Modal title={`${zone.name} Settings`} onClose={onClose}>
       <form className="settings-form" onSubmit={async event => {
         event.preventDefault()
+        if (!availableHvacModes(zone).includes(draft.mode)) { setError('Select a mode supported by the assigned equipment.'); return }
         try { await onSave({
           mode: draft.mode,
           coolSetpointF: Number(draft.coolSetpointF),
@@ -321,7 +322,8 @@ function HvacSettingsDialog({ zone, onClose, onSave }) {
         <div className="form-grid two">
           <Field label="Mode">
             <select value={draft.mode} onChange={event => update('mode', event.target.value)}>
-              {hvacModes.map(mode => <option key={mode} value={mode}>{mode}</option>)}
+              {!availableHvacModes(zone).includes(draft.mode) && <option value={draft.mode} disabled>Unavailable: {draft.mode}</option>}
+              {availableHvacModes(zone).map(mode => <option key={mode} value={mode}>{mode}</option>)}
             </select>
           </Field>
           <Field label="Current Temp">
@@ -768,7 +770,7 @@ function HvacCard({ zone, onDispatch, onConfigure }) {
     ['sun', 'Heat Pump', 'heatPump'],
     ['fan', 'Fan', 'fan'],
     ['gear', 'Auto', 'auto']
-  ].filter(([, ,key]) => key === 'auto' || zone.availableEquipment?.includes(key))
+  ].filter(([, ,key]) => key === 'auto' ? availableHvacModes(zone).includes('Auto') : zone.availableEquipment?.includes(key))
 
   return (
     <section className="panel hvac-card">
