@@ -55,3 +55,12 @@ test('only an explicit standalone simulation can save demo configuration', () =>
   assert.equal(isStandaloneDemo({...session,token:'saved-token'}),false)
   assert.equal(isStandaloneDemo({...session,development:false}),false)
 })
+
+test('configuration feedback includes every input group requiring restart', async () => {
+  for (const [temperature,security,label] of [[true,false,'temperature buses'],[false,true,'security inputs'],[true,true,'temperature buses and security inputs']]) {
+    const result = await persistSystemProfile(defaultSystemProfile,{token:'test',saveRemote:async()=>({features:defaultSystemProfile,temperatureInputsRequireRestart:temperature,securityInputsRequireRestart:security})})
+    assert.ok(result.message.includes(label))
+    assert.match(result.message,/Restart controller/)
+    assert.equal(result.message.includes('discover temperature'),temperature)
+  }
+})

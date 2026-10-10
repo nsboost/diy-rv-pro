@@ -16,8 +16,11 @@ export async function persistSystemProfile(profile, { demo = false, token, saveR
   if (!saved?.features || saved.features.schemaVersion !== normalized.schemaVersion) {
     throw new Error('Controller did not return a valid saved configuration; reload to verify')
   }
+  const pendingInputs = []
+  if (saved.temperatureInputsRequireRestart === true) pendingInputs.push('temperature buses')
+  if (saved.securityInputsRequireRestart === true) pendingInputs.push('security inputs')
   return {
     profile: normalizeSystemProfile(saved.features),
-    message: saved.temperatureInputsRequireRestart ? 'Configuration saved. Restart controller to apply temperature buses, then discover sensors.' : 'Configuration saved to controller; commissioning still required'
+    message: pendingInputs.length ? `Configuration saved. Restart controller to apply ${pendingInputs.join(' and ')}.${saved.temperatureInputsRequireRestart === true ? ' Then discover temperature sensors.' : ''} Commissioning is still required.` : 'Configuration saved to controller; commissioning still required'
   }
 }
