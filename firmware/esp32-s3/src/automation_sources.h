@@ -7,3 +7,5 @@
 cJSON *automation_temperature_sources(const cJSON *profile,
                                       const cJSON *devices,
                                       bool inputs_pending);
+
+void automation_security_sources(cJSON *sources, const cJSON *profile, const cJSON *readings);

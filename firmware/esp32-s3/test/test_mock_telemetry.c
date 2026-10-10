@@ -489,12 +489,28 @@ static void test_automation_rejects_invalid_rules(void) {
 }
 
 #ifdef DIY_HOST_TEST
+static void test_security_sources_reject_stale_and_disabled_contacts(void) {
+    cJSON *profile = cJSON_Parse("{\"securitySensors\":[{\"id\":\"door\",\"enabled\":true},{\"id\":\"disabled\",\"enabled\":false}]}");
+    cJSON *readings = cJSON_Parse("{\"sensors\":[{\"id\":\"door\",\"status\":\"ok\",\"active\":false}]}");
+    cJSON *sources = cJSON_CreateObject();
+    automation_security_sources(sources, profile, readings);
+    TEST_ASSERT_TRUE(cJSON_IsFalse(cJSON_GetObjectItemCaseSensitive(sources, "security.door.active")));
+    TEST_ASSERT_NULL(cJSON_GetObjectItemCaseSensitive(sources, "security.disabled.active"));
+    cJSON_Delete(sources);
+    cJSON_ReplaceItemInObjectCaseSensitive(cJSON_GetArrayItem(cJSON_GetObjectItemCaseSensitive(readings,"sensors"),0),"status",cJSON_CreateString("stale"));
+    sources = cJSON_CreateObject();
+    automation_security_sources(sources, profile, readings);
+    TEST_ASSERT_TRUE(cJSON_IsNull(cJSON_GetObjectItemCaseSensitive(sources,"security.door.active")));
+    cJSON_Delete(sources); cJSON_Delete(readings); cJSON_Delete(profile);
+}
+
 int main(void)
 #else
 void app_main(void)
 #endif
 {
     UNITY_BEGIN();
+    RUN_TEST(test_security_sources_reject_stale_and_disabled_contacts);
     RUN_TEST(test_automation_hold_fault_reset_restore_and_retry);
     RUN_TEST(test_automation_rejects_invalid_rules);
     RUN_TEST(test_automation_clock_comparisons);

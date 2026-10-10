@@ -71,3 +71,23 @@ cJSON *automation_temperature_sources(const cJSON *profile,
   }
   return sources;
 }
+
+void automation_security_sources(cJSON *sources, const cJSON *profile,
+                                 const cJSON *readings) {
+  if (!sources) return;
+  const cJSON *sensor;
+  cJSON_ArrayForEach(sensor, cJSON_GetObjectItemCaseSensitive(profile, "securitySensors")) {
+    if (!enabled(sensor)) continue;
+    char key[128];
+    snprintf(key, sizeof(key), "security.%s.active", text(sensor, "id"));
+    const cJSON *reading, *value = NULL;
+    cJSON_ArrayForEach(reading, cJSON_GetObjectItemCaseSensitive(readings, "sensors")) {
+      if (!strcmp(text(sensor, "id"), text(reading, "id")) && !strcmp(text(reading, "status"), "ok")) {
+        value = cJSON_GetObjectItemCaseSensitive(reading, "active");
+        break;
+      }
+    }
+    if (cJSON_IsBool(value)) cJSON_AddBoolToObject(sources, key, cJSON_IsTrue(value));
+    else cJSON_AddNullToObject(sources, key);
+  }
+}
