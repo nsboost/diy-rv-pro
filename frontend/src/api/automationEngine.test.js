@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { evaluateRules, durationMs, compareCondition, validateCondition, readAutomationSource } from './automationEngine.js'
+import { evaluateRules, durationMs, compareCondition, validateCondition, readAutomationSource, conditionOperators } from './automationEngine.js'
 import { createLocalController, normalizeAutomationRule } from './telemetryClient.js'
 import { demoProfile, demoReadings } from '../data/demoProfile.js'
 import { cloneTelemetry } from '../data/mockTelemetry.js'
@@ -398,4 +398,10 @@ test('contact comparisons require boolean meaning and supported operators',()=>{
   for (const value of ['false','off','on']) validateCondition({source:'security.door.active',operator:'=',value})
   assert.throws(()=>validateCondition({source:'security.door.active',operator:'>',value:'1'}),/Contact sensors support/)
   assert.throws(()=>validateCondition({source:'security.door.active',operator:'=',value:'1'}),/Contact sensor value/)
+})
+
+test('contact comparison choices omit unsupported numeric operators',()=>{
+  assert.deepEqual(conditionOperators('security.door.active'),['=','!=','changes'])
+  assert.ok(conditionOperators('temperature.probe.tempF').includes('between'))
+  assert.ok(conditionOperators('time.local').includes('outside'))
 })

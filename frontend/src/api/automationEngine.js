@@ -1,5 +1,9 @@
 const operators = new Set(['=', '!=', '>', '>=', '<', '<=', 'between', 'outside', 'changes'])
 
+export function conditionOperators(source) {
+  return source?.startsWith('security.') && source.endsWith('.active') ? ['=','!=','changes'] : [...operators]
+}
+
 export function durationMs(value = '0 min') {
   const match = String(value).trim().match(/^(\d+(?:\.\d+)?)\s*(s|sec|seconds?|min|minutes?|h|hours?)$/i)
   if (!match) throw new Error('Hold duration must use seconds, minutes, or hours')

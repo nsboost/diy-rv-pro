@@ -1,3 +1,4 @@
+import { conditionOperators } from './api/automationEngine.js'
 import { mapSecurityInputs } from './api/mapSecurityInputs.js'
 import { mapDiscoveredTemperatures } from './api/mapDiscoveredTemperatures.js'
 import { parseHvacSettingsDraft } from './config/hvacSettingsDraft.js'
@@ -41,7 +42,6 @@ const navItems = [
   ['setup', 'Setup Wizard', 'wand']
 ]
 
-const automationOperators = ['=', '!=', '>', '>=', '<', '<=', 'between', 'outside', 'changes']
 
 const automationCommands = {
   turnOn: { id: 'turnOn', label: 'Turn On', type: 'state', value: 'on' },
@@ -542,7 +542,8 @@ function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile }) {
             </Field>
             <Field label="Compare">
               <select value={draft.trigger.operator} onChange={event => setGroup('trigger', 'operator', event.target.value)}>
-                {automationOperators.map(operator => <option key={operator} value={operator}>{operator}</option>)}
+                {!conditionOperators(draft.trigger.source).includes(draft.trigger.operator) && <option value={draft.trigger.operator} disabled>Unavailable: {draft.trigger.operator}</option>}
+                {conditionOperators(draft.trigger.source).map(operator => <option key={operator} value={operator}>{operator}</option>)}
               </select>
             </Field>
             <Field label="Value">
@@ -609,7 +610,8 @@ function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile }) {
             </Field>
             <Field label="Compare">
               <select value={draft.reverse.operator} onChange={event => setGroup('reverse', 'operator', event.target.value)}>
-                {automationOperators.map(operator => <option key={operator} value={operator}>{operator}</option>)}
+                {!conditionOperators(draft.reverse.source).includes(draft.reverse.operator) && <option value={draft.reverse.operator} disabled>Unavailable: {draft.reverse.operator}</option>}
+                {conditionOperators(draft.reverse.source).map(operator => <option key={operator} value={operator}>{operator}</option>)}
               </select>
             </Field>
             <Field label="Value">
