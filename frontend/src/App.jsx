@@ -1,5 +1,5 @@
+import { mapSecurityInputs } from './api/mapSecurityInputs.js'
 import { mapDiscoveredTemperatures } from './api/mapDiscoveredTemperatures.js'
-import { sampledAtFromRequest } from './api/sensorFreshness.js'
 import { parseHvacSettingsDraft } from './config/hvacSettingsDraft.js'
 import { requestControllerJson } from './api/controllerRequest.js'
 import ControllerSettings from './components/ControllerSettings.jsx'
@@ -970,8 +970,10 @@ export default function App() {
       try {
         const token = getAdminToken()
         const snapshot = await fetchTelemetry()
+        let confirmedProfile
         if (token) {
           const config = await fetchConfig(token)
+          confirmedProfile = config.features
           if (!cancelled) setSystemProfile(config.features)
           const discoveryStartedAt = Date.now()
           const discovery = await requestControllerJson('/api/temperature/devices', {headers: {Authorization: `Bearer ${token}`}}).catch(() => null)
@@ -980,7 +982,7 @@ export default function App() {
         if (token) {
           const contactsStartedAt = Date.now()
           const contacts = await requestControllerJson('/api/security/inputs', {headers:{Authorization:`Bearer ${token}`}}).catch(() => null)
-          snapshot.securityInputs = Array.isArray(contacts?.sensors) ? contacts.sensors.map(sensor => ({...sensor,sampledAt:sampledAtFromRequest(contactsStartedAt, 0)})) : []
+          snapshot.securityInputs = mapSecurityInputs(contacts?.sensors, confirmedProfile.securitySensors, contactsStartedAt)
         }
         if (!cancelled) {
           setTelemetry({ ...snapshot, controller: { ...snapshot.controller, mode: 'device', online: true } })
