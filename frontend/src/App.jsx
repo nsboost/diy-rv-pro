@@ -1,3 +1,4 @@
+import { parseHvacSettingsDraft } from './config/hvacSettingsDraft.js'
 import { requestControllerJson } from './api/controllerRequest.js'
 import ControllerSettings from './components/ControllerSettings.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -305,20 +306,19 @@ function HvacSettingsDialog({ zone, onClose, onSave }) {
   })
 
   const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
   const update = (key, value) => setDraft(current => ({ ...current, [key]: value }))
 
   return (
     <Modal title={`${zone.name} Settings`} onClose={onClose}>
       <form className="settings-form" onSubmit={async event => {
         event.preventDefault()
+        if (saving) return
         if (!availableHvacModes(zone).includes(draft.mode)) { setError('Select a mode supported by the assigned equipment.'); return }
-        try { await onSave({
-          mode: draft.mode,
-          coolSetpointF: Number(draft.coolSetpointF),
-          heatSetpointF: Number(draft.heatSetpointF),
-          autoDifferentialF: Number(draft.autoDifferentialF),
-          sensorOffsetF: Number(draft.sensorOffsetF)
-        }); setError('') } catch (failure) { setError(failure.message) }
+        setSaving(true); setError('')
+        try { await onSave(parseHvacSettingsDraft(draft)) }
+        catch (failure) { setError(failure.message) }
+        finally { setSaving(false) }
       }}>
         <div className="form-grid two">
           <Field label="Mode">
@@ -331,22 +331,22 @@ function HvacSettingsDialog({ zone, onClose, onSave }) {
             <input value={`${zone.tempF} F`} disabled />
           </Field>
           <Field label="AC Set Point">
-            <input type="number" min="50" max="95" step="1" value={draft.coolSetpointF} onChange={event => update('coolSetpointF', event.target.value)} />
+            <input required type="number" min="50" max="95" step="1" value={draft.coolSetpointF} onChange={event => update('coolSetpointF', event.target.value)} />
           </Field>
           <Field label="Heat Set Point">
-            <input type="number" min="40" max="90" step="1" value={draft.heatSetpointF} onChange={event => update('heatSetpointF', event.target.value)} />
+            <input required type="number" min="40" max="90" step="1" value={draft.heatSetpointF} onChange={event => update('heatSetpointF', event.target.value)} />
           </Field>
           <Field label="Auto Differential">
-            <input type="number" min="1" max="10" step="1" value={draft.autoDifferentialF} onChange={event => update('autoDifferentialF', event.target.value)} />
+            <input required type="number" min="1" max="10" step="1" value={draft.autoDifferentialF} onChange={event => update('autoDifferentialF', event.target.value)} />
           </Field>
-          <Field label="Thermistor Offset">
-            <input type="number" min="-10" max="10" step="0.5" value={draft.sensorOffsetF} onChange={event => update('sensorOffsetF', event.target.value)} />
+          <Field label="Sensor Offset">
+            <input required type="number" min="-10" max="10" step="0.5" value={draft.sensorOffsetF} onChange={event => update('sensorOffsetF', event.target.value)} />
           </Field>
         </div>
         {error && <p className="config-error" role="alert">{error}</p>}
         <div className="modal-actions">
           <button className="secondary-action" type="button" onClick={onClose}>Cancel</button>
-          <button className="primary-action" type="submit">Save HVAC Settings</button>
+          <button className="primary-action" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save HVAC Settings'}</button>
         </div>
       </form>
     </Modal>
