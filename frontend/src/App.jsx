@@ -294,7 +294,7 @@ function Modal({ title, children, onClose, busy = false }) {
           <h2 id="modal-title">{title}</h2>
           <button className="icon-button modal-close" aria-label="Close dialog" disabled={busy} onClick={onClose} type="button">x</button>
         </div>
-        {children}
+        <fieldset className="modal-fields" disabled={busy}>{children}</fieldset>
       </section>
     </div>
   )

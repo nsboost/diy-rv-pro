@@ -78,7 +78,11 @@ recovery tests remain outstanding.
   are distinct paths. Initialization-failure and power-loss bench checks remain open.
 - [ ] Exercise pending save/delete/acknowledgement and keyboard/backdrop dismissal
   with delayed live requests. Idle browser flows passed; pending behavior is
-  currently implementation-inspected and request-helper tested.
+  currently implementation-inspected and request-helper tested. Dialog fields now
+  use a disabled fieldset during pending HVAC/automation operations so users cannot
+  edit a different draft while its earlier version is being saved. Idle browser
+  editing/cancel and dialog layout were checked after this change; delayed device
+  request behavior remains unverified. All 110 frontend tests and build passed.
 - [ ] Verify notification permission granted/denied/unavailable states and actual
   OS delivery while the dashboard is open. Closed-browser background delivery
   is outside the chosen in-app/browser implementation and is not promised.
