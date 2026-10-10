@@ -2,6 +2,7 @@
 #include "automation_sources.h"
 #include "timezone_lookup.h"
 #include <string.h>
+#include <stdlib.h>
 
 #include "feature_config.h"
 #include "contact_filter.h"
@@ -316,6 +317,43 @@ static bool execute_test_rule(const cJSON *rule,const cJSON *action,bool restori
 static cJSON *temperature_rules(void) {
     return cJSON_Parse("[{\"id\":\"temp-alert\",\"name\":\"Bedroom warm\",\"enabled\":true,\"trigger\":{\"source\":\"temperature.bedroom.tempF\",\"operator\":\">\",\"value\":\"75\",\"holdFor\":\"5 sec\"},\"action\":{\"target\":\"notification\",\"command\":\"sendAlert\",\"value\":\"Bedroom warm\"},\"reverse\":{\"enabled\":true,\"source\":\"temperature.bedroom.tempF\",\"operator\":\"<\",\"value\":\"72\",\"target\":\"notification\",\"command\":\"sendAlert\",\"restoreValue\":\"Recovered\"}}]");
 }
+static size_t allocation_number, fail_allocation, outstanding_allocations;
+static void *failing_json_allocation(size_t size) {
+    allocation_number++;
+    if (allocation_number == fail_allocation) return NULL;
+    void *allocated=malloc(size);
+    if (allocated) outstanding_allocations++;
+    return allocated;
+}
+static void tracked_json_free(void *pointer) {
+    if (pointer) outstanding_allocations--;
+    free(pointer);
+}
+static void test_saved_state_allocation_failures_never_return_partial_record(void) {
+    automation_engine_t engine={0};
+    cJSON *rules=temperature_rules(), *alerts=cJSON_CreateArray();
+    cJSON_Hooks hooks={failing_json_allocation,tracked_json_free};
+    fail_allocation=0; allocation_number=0; cJSON_InitHooks(&hooks);
+    cJSON *saved=automation_engine_saved_state(&engine,rules,alerts,"temp-alert",true);
+    size_t allocations=allocation_number;
+    cJSON_InitHooks(NULL);
+    TEST_ASSERT_NOT_NULL(saved);
+    TEST_ASSERT_TRUE(automation_validate_saved_state(saved,NULL,0));
+    TEST_ASSERT_EQUAL(1,cJSON_GetArraySize(cJSON_GetObjectItemCaseSensitive(saved,"activeRuleIds")));
+    cJSON_Delete(saved);
+    for (size_t i=1;i<=allocations;i++) {
+        fail_allocation=i; allocation_number=0; outstanding_allocations=0; cJSON_InitHooks(&hooks);
+        saved=automation_engine_saved_state(&engine,rules,alerts,"temp-alert",true);
+        cJSON_InitHooks(NULL);
+        TEST_ASSERT_NULL(saved);
+        TEST_ASSERT_EQUAL(0,outstanding_allocations);
+        TEST_ASSERT_FALSE(engine.rules[0].active);
+    }
+    saved=automation_engine_saved_state(&engine,rules,alerts,"unknown",true);
+    TEST_ASSERT_NULL(saved);
+    cJSON_Delete(rules); cJSON_Delete(alerts);
+}
+
 static void test_saved_activation_versions_and_references(void) {
     cJSON *saved=cJSON_CreateObject(); char error[96];
     cJSON_AddNumberToObject(saved,"version",1);
@@ -651,6 +689,7 @@ void app_main(void)
 #endif
 {
     UNITY_BEGIN();
+    RUN_TEST(test_saved_state_allocation_failures_never_return_partial_record);
     RUN_TEST(test_saved_activation_versions_and_references);
     RUN_TEST(test_activation_restore_excludes_timers_and_rejects_invalid_ids);
     RUN_TEST(test_active_alert_survives_unavailable_input_without_duplicate);

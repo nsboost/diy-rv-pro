@@ -442,3 +442,34 @@ bool automation_engine_restore_activation(automation_engine_t *engine, const cJS
   }
   return true;
 }
+
+cJSON *automation_engine_saved_state(const automation_engine_t *engine, const cJSON *rules, const cJSON *notifications, const char *transition_id, bool active) {
+  cJSON *root = cJSON_CreateObject();
+  cJSON *rules_copy = cJSON_Duplicate(rules, true);
+  cJSON *alerts_copy = cJSON_Duplicate(notifications, true);
+  cJSON *activation = automation_engine_export_activation(engine, rules);
+  if (activation && transition_id) {
+    for (int i = cJSON_GetArraySize(activation) - 1; i >= 0; i--)
+      if (!strcmp(cJSON_GetArrayItem(activation, i)->valuestring, transition_id))
+        cJSON_DeleteItemFromArray(activation, i);
+    if (active) {
+      cJSON *id = cJSON_CreateString(transition_id);
+      if (!id || !cJSON_AddItemToArray(activation, id)) {
+        cJSON_Delete(id); cJSON_Delete(activation); activation = NULL;
+      }
+    }
+  }
+  bool assembled = root && rules_copy && alerts_copy && activation;
+  if (assembled) assembled = cJSON_AddNumberToObject(root, "version", 2) != NULL;
+  if (assembled && cJSON_AddItemToObject(root, "activeRuleIds", activation)) activation = NULL;
+  else assembled = false;
+  if (assembled && cJSON_AddItemToObject(root, "rules", rules_copy)) rules_copy = NULL;
+  else assembled = false;
+  if (assembled && cJSON_AddItemToObject(root, "notifications", alerts_copy)) alerts_copy = NULL;
+  else assembled = false;
+  cJSON_Delete(activation); cJSON_Delete(rules_copy); cJSON_Delete(alerts_copy);
+  if (!assembled || !automation_validate_saved_state(root, NULL, 0)) {
+    cJSON_Delete(root); return NULL;
+  }
+  return root;
+}

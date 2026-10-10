@@ -29,42 +29,8 @@ static const char *text(const cJSON *obj, const char *key) {
 static esp_err_t save_state(const cJSON *next_rules, const cJSON *next_alerts, const char *transition_id, bool active) {
   if (storage_fault)
     return ESP_ERR_INVALID_STATE;
-  cJSON *root = cJSON_CreateObject();
-  cJSON *rules_copy = cJSON_Duplicate(next_rules, true);
-  cJSON *alerts_copy = cJSON_Duplicate(next_alerts, true);
-  cJSON *activation = automation_engine_export_activation(&engine, next_rules);
-  if (activation && transition_id) {
-    for (int i = cJSON_GetArraySize(activation) - 1; i >= 0; i--)
-      if (!strcmp(cJSON_GetArrayItem(activation, i)->valuestring, transition_id))
-        cJSON_DeleteItemFromArray(activation, i);
-    if (active) {
-      cJSON *id = cJSON_CreateString(transition_id);
-      if (!id || !cJSON_AddItemToArray(activation, id)) {
-        cJSON_Delete(id); cJSON_Delete(activation); activation = NULL;
-      }
-    }
-  }
-  if (!root || !rules_copy || !alerts_copy || !activation) {
-    cJSON_Delete(root);
-    cJSON_Delete(rules_copy);
-    cJSON_Delete(alerts_copy);
-    cJSON_Delete(activation);
-    return ESP_ERR_NO_MEM;
-  }
-  bool assembled = cJSON_AddNumberToObject(root, "version", 2) != NULL;
-  if (assembled && cJSON_AddItemToObject(root, "activeRuleIds", activation)) activation = NULL;
-  else assembled = false;
-  if (assembled && cJSON_AddItemToObject(root, "rules", rules_copy)) rules_copy = NULL;
-  else assembled = false;
-  if (assembled && cJSON_AddItemToObject(root, "notifications", alerts_copy)) alerts_copy = NULL;
-  else assembled = false;
-  cJSON_Delete(activation);
-  cJSON_Delete(rules_copy);
-  cJSON_Delete(alerts_copy);
-  if (!assembled || !automation_validate_saved_state(root, NULL, 0)) {
-    cJSON_Delete(root);
-    return assembled ? ESP_ERR_INVALID_STATE : ESP_ERR_NO_MEM;
-  }
+  cJSON *root = automation_engine_saved_state(&engine, next_rules, next_alerts, transition_id, active);
+  if (!root) return ESP_ERR_NO_MEM;
   char *payload = cJSON_PrintUnformatted(root);
   cJSON_Delete(root);
   if (!payload)
