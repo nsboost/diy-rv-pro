@@ -260,6 +260,10 @@ static bool compare(const cJSON *condition, const cJSON *value,
   if (cJSON_IsString(value))
     equal = !strcmp(value->valuestring, expected);
   else if (cJSON_IsBool(value)) {
+    char normalized[16] = {0};
+    if (strlen(expected) >= sizeof(normalized)) return false;
+    for (size_t i = 0; expected[i]; ++i) normalized[i] = (char)tolower((unsigned char)expected[i]);
+    expected = normalized;
     bool truth = !strcmp(expected, "on") || !strcmp(expected, "true") ||
                  !strcmp(expected, "connected") || !strcmp(expected, "running");
     bool falsity = !strcmp(expected, "off") || !strcmp(expected, "false") ||

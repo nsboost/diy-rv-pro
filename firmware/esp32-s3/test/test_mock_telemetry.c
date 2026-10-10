@@ -509,6 +509,15 @@ static void test_contact_rule_comparisons_require_boolean_semantics(void) {
     char error[128];
     TEST_ASSERT_TRUE(automation_validate_rule(rule,error,sizeof(error)));
     cJSON *trigger=cJSON_GetObjectItemCaseSensitive(rule,"trigger");
+    cJSON_ReplaceItemInObjectCaseSensitive(trigger,"value",cJSON_CreateString("True"));
+    TEST_ASSERT_TRUE(automation_validate_rule(rule,error,sizeof(error)));
+    cJSON *rules=cJSON_CreateArray(), *sources=cJSON_CreateObject();
+    cJSON_AddItemToArray(rules,cJSON_Duplicate(rule,true));
+    cJSON_AddBoolToObject(sources,"security.door.active",true);
+    automation_engine_t engine={0}; executions=0; allow_execution=true;
+    automation_engine_tick(&engine,rules,sources,1000,execute_test_rule,NULL);
+    TEST_ASSERT_EQUAL(1,executions);
+    automation_engine_reset(&engine); cJSON_Delete(rules); cJSON_Delete(sources);
     cJSON_ReplaceItemInObjectCaseSensitive(trigger,"value",cJSON_CreateString("1"));
     TEST_ASSERT_FALSE(automation_validate_rule(rule,error,sizeof(error)));
     cJSON_ReplaceItemInObjectCaseSensitive(trigger,"operator",cJSON_CreateString(">"));
