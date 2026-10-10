@@ -18,3 +18,14 @@ test('incomplete telemetry and malformed render collections are rejected', () =>
     assert.throws(()=>validateTelemetry(value),/invalid telemetry/)
   }
 })
+
+test('rendered text and numeric readings reject objects and coerced numbers', () => {
+  for (const [section,key,bad] of [['controller','name',{}],['solar','watts','482'],['battery','voltage',Infinity],['time','display',[]]]) {
+    const value=structuredClone(initialTelemetry)
+    value[section][key]=bad
+    assert.throws(()=>validateTelemetry(value),/invalid telemetry/)
+  }
+  const value=structuredClone(initialTelemetry)
+  value.events[0].message={text:'bad'}
+  assert.throws(()=>validateTelemetry(value),/invalid telemetry/)
+})

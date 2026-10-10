@@ -419,3 +419,7 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 ### Telemetry structure validation (October 10)
 - Device reads validate required dashboard objects and render collections before updating UI state. Null records, malformed lists, invalid optional runtime/storage feedback and malformed supplied status tuples are rejected with a compatibility/reconnect error. Legitimate null numeric readings are preserved; systemStatus remains optional because inventory projection constructs it and firmware does not emit it.
 - All 96 frontend tests and production build passed. This is structural boundary coverage, not validation of every scalar field or live malformed-controller browser behavior.
+
+### Rendered telemetry scalar validation (October 10)
+- Telemetry boundary validation checks known card text fields for string type and known numeric readings for finite numbers or explicit null. Object-valued labels/messages and coerced numeric strings are rejected before render. Optional omitted fields remain compatible with firmware-derived UI summaries.
+- All 97 frontend tests and the production build passed. Regression covers object text, list text, numeric strings and nonfinite readings. Validation remains scoped to known fields; live malformed-response browser testing is pending.
