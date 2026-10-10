@@ -66,6 +66,29 @@ test('rules, configuration and acknowledged alerts survive controller recreation
   assert.equal(restored.getTelemetry().notifications.find(item => item.id === notification.id).read, true)
 })
 
+test('failed acknowledgement persistence leaves the alert unread and allows retry', () => {
+  const values = new Map()
+  let failWrites = false
+  const storage = {getItem:key => values.get(key), setItem:(key,value) => {
+    if (failWrites) throw new Error('Quota exceeded')
+    values.set(key,value)
+  }}
+  const controller = createLocalController(cloneTelemetry(), {storage,initialProfile:demoProfile})
+  controller.dispatch({type:'automation.upsert',rule:{...alertRule,trigger:{...alertRule.trigger,holdFor:'0 sec'}}})
+  controller.setReadings(demoReadings(1000).map(item => ({...item,tempF:80})))
+  const alert = controller.tick(1000).notifications.find(item => item.ruleId === alertRule.id)
+  const saved = values.get('diy-rv-demo-v2')
+  failWrites = true
+  assert.throws(() => controller.acknowledge(alert.id), /could not be saved/)
+  assert.equal(controller.getTelemetry().notifications.find(item => item.id === alert.id).read,false)
+  assert.equal(values.get('diy-rv-demo-v2'),saved)
+  failWrites = false
+  controller.acknowledge(alert.id)
+  const restored = createLocalController(cloneTelemetry(), {storage})
+  assert.equal(restored.getTelemetry().notifications.find(item => item.id === alert.id).read,true)
+  assert.throws(() => controller.acknowledge('missing'), /not found/)
+})
+
 test('blocking rule prevents generator action irrespective of rule ordering', () => {
   const controller = createLocalController(cloneTelemetry(), {initialProfile: demoProfile})
   const trigger = {source: 'battery.voltage', operator: '>', value: '0', holdFor: '0 sec'}

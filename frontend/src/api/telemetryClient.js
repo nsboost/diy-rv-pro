@@ -68,13 +68,13 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
   }
   let persistedPayload = ''
   const persist = () => {
-    if (!storage) return
+    if (!storage) return true
     try {
       const payload = JSON.stringify({ version: 2, config, rules: telemetry.automationRules, notifications, notificationSettings, runtime })
       if (payload !== persistedPayload) storage.setItem('diy-rv-demo-v2', payload)
-      persistedPayload = payload; storageError = ''
+      persistedPayload = payload; storageError = ''; return true
     }
-    catch { storageError = 'Browser storage is unavailable or full. Changes cannot be preserved.' }
+    catch { storageError = 'Browser storage is unavailable or full. Changes cannot be preserved.'; return false }
   }
   const notify = (message, severity = 'info', ruleId = '') => {
     if (notificationSettings.inApp) {
@@ -128,7 +128,17 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
       return () => listeners.delete(listener)
     },
     setReadings(readings) { telemetry.temperatures = structuredClone(readings) },
-    acknowledge(id) { notifications = notifications.map(item => item.id === id ? { ...item, read: true } : item); persist(); emit() },
+    acknowledge(id) {
+      if (!notifications.some(item => item.id === id)) throw new Error('Notification not found')
+      const previous = notifications
+      notifications = notifications.map(item => item.id === id ? { ...item, read: true } : item)
+      if (!persist()) {
+        notifications = previous
+        emit()
+        throw new Error('Acknowledgement could not be saved. Free browser storage and try again.')
+      }
+      emit()
+    },
     setNotificationSettings(settings) {
       for (const key of ['inApp', 'desktop']) if (typeof settings[key] === 'boolean') notificationSettings[key] = settings[key]
       persist(); emit()

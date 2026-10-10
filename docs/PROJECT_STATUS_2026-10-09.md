@@ -89,7 +89,7 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
   runtime. Temperature-based alerts run in a background task. Physical equipment
   drivers, other source values, time synchronization and hardware bench checks
   remain incomplete; equipment prototype simulation is labeled explicitly.
-- The frontend suite currently contains 45 passing tests, including malformed
+- The frontend suite currently contains 46 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
   contain 20 passing tests including assigned pump outputs, boolean flag validation, rule identity retention, disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
@@ -202,3 +202,5 @@ Automation readiness now checks the current configured source/action catalog bef
 Setup and firmware reject ambiguous inventory identities (path separators, whitespace and reserved object keys) before saving. Generated identities already meet these requirements. Friendly labels retain UTF-8 support. Existing imported IDs are not silently rewritten because references must be corrected together. All 45 frontend tests, 20 firmware tests and both builds pass.
 
 The Notifications menu now displays browser delivery readiness separately from the saved preference: off, blocked, unavailable, waiting for permission or enabled while open. Permission requests disable the browser toggle until completion, preventing overlapping prompts. Browser verification confirmed the off status with in-app notifications enabled and existing acknowledgements intact; no OS permission was granted or changed. Production build passes. Permission-dialog outcomes require browser permission testing on the deployment browser.
+
+Browser-demo notification acknowledgement now requires persistence success. A failed storage write rolls back the read flag, preserves the previous saved payload and exposes a retryable error in the Notifications menu. Missing notification IDs are rejected. A quota-failure integration test verifies unread rollback, successful retry and acknowledged state after reload. All 46 frontend tests and the production build pass.
