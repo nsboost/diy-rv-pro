@@ -102,6 +102,14 @@ recovery tests remain outstanding.
   the rebuilt production GUI. No captured console errors occurred. Fixture tab
   and server were closed. These remain simulated HTTP checks; acknowledgement,
   backdrop dismissal and physical-device verification remain open.
+  Notification acknowledgement now also has production-browser fixture evidence.
+  During an eight-second response delay, both acknowledgement buttons were disabled
+  and no alert appeared acknowledged early. Confirmation marked the first alert
+  read. An injected HTTP rejection retained the second unread alert, exposed the
+  error and restored its retry button. Explicit retry confirmed successfully;
+  both alerts then showed Acknowledged and the error cleared. No captured console
+  errors occurred. Fixture tab/server were closed. Physical acknowledgement,
+  backdrop dismissal and actual OS notification delivery remain unverified.
   A shared command guard now rejects overlapping dashboard, HVAC, automation and
   device acknowledgement requests without sending or queuing the second action.
   Regression tests cover deferred confirmation, no replay, and guard release after
