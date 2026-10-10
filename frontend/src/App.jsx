@@ -18,7 +18,7 @@ import NotificationsPanel from './components/NotificationsPanel.jsx'
 import { demoProfile, demoReadings } from './data/demoProfile.js'
 import { projectTelemetry } from './api/profileTelemetry.js'
 import { controlSystems, sourceCatalog } from './config/automationCatalog.js'
-import { loadNotificationSettings } from './api/notificationSettings.js'
+import { loadNotificationSettings, saveNotificationSettings } from './api/notificationSettings.js'
 import { ruleStatus } from './api/ruleStatus.js'
 import { availableHvacModes } from './config/hvacCapabilities.js'
 import SetupWizard from './components/SetupWizard.jsx'
@@ -925,7 +925,7 @@ export default function App() {
   const [browserSettings, setBrowserSettings] = useState(() => {
     try { return loadNotificationSettings(window.localStorage, controller.getTelemetry().notificationSettings) } catch { return loadNotificationSettings(null) }
   })
-  useEffect(() => { controller.setNotificationSettings(browserSettings) }, [controller, browserSettings])
+  useEffect(() => { controller.setNotificationSettings(browserSettings, {persistSettings:false}) }, [controller, browserSettings])
   const notificationCursor = useRef({initialized:false, ids:new Set()})
   useEffect(() => {
     if (snapshot.controller.mode !== 'device') return
@@ -1132,7 +1132,7 @@ export default function App() {
   )
 
   const renderPage = () => {
-    if (activeSection === 'notifications') return <NotificationsPanel telemetry={{...snapshot, notificationSettings: browserSettings}} onAcknowledge={id => { if (snapshot.controller.mode === 'device') dispatch({type:'notification.acknowledge',id}).catch(() => {}); else { controller.acknowledge(id); setTelemetry(current => ({ ...current, notifications: controller.getTelemetry().notifications, controller: {...current.controller, alerts: controller.getTelemetry().controller.alerts} })) } }} onSettings={settings => { setBrowserSettings(current => { const next={...current,...settings}; try { window.localStorage.setItem('diy-rv-notification-settings',JSON.stringify(next)) } catch { setControlError('Browser notification preferences could not be saved.') } return next }); controller.setNotificationSettings(settings); setTelemetry(current => ({ ...current, notificationSettings: controller.getTelemetry().notificationSettings })) }} />
+    if (activeSection === 'notifications') return <NotificationsPanel telemetry={{...snapshot, notificationSettings: browserSettings}} onAcknowledge={id => { if (snapshot.controller.mode === 'device') dispatch({type:'notification.acknowledge',id}).catch(() => {}); else { controller.acknowledge(id); setTelemetry(current => ({ ...current, notifications: controller.getTelemetry().notifications, controller: {...current.controller, alerts: controller.getTelemetry().controller.alerts} })) } }} onSettings={settings => { const next = saveNotificationSettings(window.localStorage, browserSettings, settings); controller.setNotificationSettings(next, {persistSettings:false}); setBrowserSettings(next); setTelemetry(current => ({ ...current, notificationSettings: next })) }} />
     if (activeSection === 'setup') {
       return (
         <section className="setup-page" id="section-setup">

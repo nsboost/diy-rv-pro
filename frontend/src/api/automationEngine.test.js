@@ -188,7 +188,7 @@ test('corrupt saved demo data survives ticks and recovery requires a successful 
     const controller = createLocalController(cloneTelemetry(), {storage,initialProfile:demoProfile})
     assert.match(controller.getTelemetry().storageError,/Saved data is preserved/)
     assert.deepEqual(controller.tick(1000).automationRules,[])
-    controller.setNotificationSettings({desktop:false})
+    assert.throws(() => controller.setNotificationSettings({desktop:false}), /could not be saved/)
     assert.equal(values.get('diy-rv-demo-v2'),payload)
     assert.throws(() => controller.updateConfig(controller.getConfig()), /could not be saved/)
     assert.equal(values.get('diy-rv-demo-v2'),payload)
@@ -345,4 +345,15 @@ test('manual HVAC cannot activate unconfigured equipment or bypass an unavailabl
   assert.throws(() => controller.dispatch({type:'hvac.toggleEquipment',zoneId:'zone-1',equipment:'furnace'}),/not configured/)
   assert.throws(() => controller.dispatch({type:'hvac.toggleEquipment',zoneId:'zone-1',equipment:'ac'}),/sensor unavailable/)
   assert.throws(() => controller.dispatch({type:'hvac.updateSettings',zoneId:'zone-1',settings:{mode:'Auto'}}),/sensor unavailable/)
+})
+
+test('controller notification preferences roll back when persistence fails', () => {
+  let fail = false
+  const controller = createLocalController(cloneTelemetry(), {storage:{getItem:()=>null,setItem:()=>{if(fail)throw new Error('Full')}}})
+  controller.setNotificationSettings({inApp:false})
+  fail = true
+  assert.throws(()=>controller.setNotificationSettings({desktop:true}),/could not be saved/)
+  assert.deepEqual(controller.getTelemetry().notificationSettings,{inApp:false,desktop:false})
+  controller.setNotificationSettings({inApp:true},{persistSettings:false})
+  assert.deepEqual(controller.getTelemetry().notificationSettings,{inApp:true,desktop:false})
 })

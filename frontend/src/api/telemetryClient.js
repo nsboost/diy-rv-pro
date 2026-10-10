@@ -185,9 +185,15 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
     },
     setReadings(readings) { telemetry.temperatures = structuredClone(readings) },
     acknowledge,
-    setNotificationSettings(settings) {
-      for (const key of ['inApp', 'desktop']) if (typeof settings[key] === 'boolean') notificationSettings[key] = settings[key]
-      persist(); emit()
+    setNotificationSettings(settings, { persistSettings = true } = {}) {
+      const previous = notificationSettings
+      notificationSettings = normalizeNotificationSettings(settings, previous)
+      if (persistSettings && !persist()) {
+        notificationSettings = previous
+        emit()
+        throw new Error('Notification preferences could not be saved. Free browser storage and try again.')
+      }
+      emit()
     },
     tick(now = Date.now()) {
       telemetry = projectTelemetry(telemetry, config.features, now)

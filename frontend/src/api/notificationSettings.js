@@ -11,3 +11,14 @@ export function loadNotificationSettings(storage, fallback) {
     return normalizeNotificationSettings(null, fallback)
   }
 }
+
+export function saveNotificationSettings(storage, current, changes) {
+  const next = normalizeNotificationSettings(changes, current)
+  try {
+    if (!storage) throw new Error('Storage unavailable')
+    storage.setItem('diy-rv-notification-settings', JSON.stringify(next))
+  } catch {
+    throw new Error('Browser notification preferences could not be saved. Free browser storage and try again.')
+  }
+  return next
+}

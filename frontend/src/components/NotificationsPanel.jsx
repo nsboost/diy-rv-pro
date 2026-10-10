@@ -4,6 +4,12 @@ export default function NotificationsPanel({ telemetry, onAcknowledge, onSetting
   const [permissionMessage, setPermissionMessage] = useState('')
   const [requestingPermission, setRequestingPermission] = useState(false)
   const [acknowledgementError, setAcknowledgementError] = useState('')
+  const [settingsError, setSettingsError] = useState('')
+  const saveSettings = async changes => {
+    setSettingsError('')
+    try { await onSettings(changes) }
+    catch (error) { setSettingsError(error.message || 'Notification preferences could not be saved.') }
+  }
   const settings = telemetry.notificationSettings || { inApp: true, desktop: false }
   const permission = typeof Notification === 'undefined' ? 'unavailable' : Notification.permission
   const browserStatus = permission === 'unavailable' ? 'Browser notifications are unavailable in this browser.'
@@ -15,7 +21,7 @@ export default function NotificationsPanel({ telemetry, onAcknowledge, onSetting
     <h2>Notifications</h2>
     <p>Review alerts and acknowledge them here. Browser alerts require permission and this dashboard to remain open.</p>
     <div className="config-form-grid">
-      <label className="inline-check"><input type="checkbox" checked={settings.inApp} onChange={event => onSettings({inApp: event.target.checked})} />In-app notifications</label>
+      <label className="inline-check"><input type="checkbox" checked={settings.inApp} onChange={event => saveSettings({inApp: event.target.checked})} />In-app notifications</label>
       <label className="inline-check"><input type="checkbox" checked={settings.desktop} disabled={requestingPermission} onChange={async event => {
         const enabled = event.target.checked
         if (requestingPermission) return
@@ -29,11 +35,12 @@ export default function NotificationsPanel({ telemetry, onAcknowledge, onSetting
           finally { setRequestingPermission(false) }
         }
         setPermissionMessage('')
-        onSettings({desktop: enabled})
+        await saveSettings({desktop: enabled})
       }} />Browser notifications</label>
     </div>
     <p role="status">{requestingPermission ? 'Waiting for browser notification permission…' : browserStatus}</p>
     {permissionMessage && <p role="status">{permissionMessage}</p>}
+    {settingsError && <p role="alert">{settingsError}</p>}
     {acknowledgementError && <p role="alert">{acknowledgementError}</p>}
     {(telemetry.notifications || []).length === 0 && <p>No notifications yet.</p>}
     <div className="notification-list">{(telemetry.notifications || []).map(item => <article className={`notification-item ${item.read ? 'read' : ''}`} key={item.id}>
