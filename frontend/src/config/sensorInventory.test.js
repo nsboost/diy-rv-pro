@@ -34,7 +34,7 @@ test('setup measures text limits in UTF-8 bytes to match controller storage', ()
   const profile = structuredClone(demoProfile)
   profile.rvProfile.name = 'é'.repeat(24)
   profile.batteries[0].label = 'é'.repeat(24)
-  profile.batteries[0].id = 'é'.repeat(16)
+  profile.batteries[0].id = 'a'.repeat(32)
   assert.deepEqual(validateProfile(profile), [])
   profile.rvProfile.name += 'é'
   profile.batteries[0].label += 'é'
@@ -42,7 +42,15 @@ test('setup measures text limits in UTF-8 bytes to match controller storage', ()
   const errors = validateProfile(profile)
   assert.ok(errors.some(error => error.startsWith('RV name')))
   assert.ok(errors.some(error => error.includes('labels must')))
-  assert.ok(errors.some(error => error.includes('oversized item identity')))
+  assert.ok(errors.some(error => error.includes('invalid or duplicate item identity')))
+})
+
+test('inventory identities cannot inject automation path separators or object keys', () => {
+  for (const id of ['zone.1', '__proto__', 'constructor', 'prototype', 'living room', 'é', '']) {
+    const profile = structuredClone(demoProfile)
+    profile.batteries[0].id = id
+    assert.ok(validateProfile(profile).some(error => error.includes('item identity')), id)
+  }
 })
 
 test('imported optional text fields are checked before sensor and reference validation', () => {

@@ -293,3 +293,5 @@ plus the 24 KiB feature profile fit during updates. This changes flash offsets;
 existing flashed prototypes require configuration backup and a full coordinated
 firmware/partition/web-image installation, rather than an app-only update. No
 board has been flashed by this change.
+
+Inventory identities use 1-32 ASCII letters, digits, hyphens or underscores, beginning with a letter or digit. The reserved identities constructor and prototype are rejected. IDs are unique across the inventory; friendly labels support UTF-8 text within 48 bytes. Imported identities that contain dots, spaces or unsupported characters must be corrected along with every referring sensor, bus, zone and automation reference; identities are never silently renamed.

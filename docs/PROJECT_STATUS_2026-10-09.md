@@ -89,12 +89,12 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
   runtime. Temperature-based alerts run in a background task. Physical equipment
   drivers, other source values, time synchronization and hardware bench checks
   remain incomplete; equipment prototype simulation is labeled explicitly.
-- The frontend suite currently contains 44 passing tests, including malformed
+- The frontend suite currently contains 45 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
   contain 20 passing tests including assigned pump outputs, boolean flag validation, rule identity retention, disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
   failed-execution retries. ESP32-S3 integration build passed: 77,872 bytes static
-  RAM and 992,141 bytes application flash. Runtime headroom and hardware operation
+  RAM and 992,489 bytes application flash. Runtime headroom and hardware operation
   still need bench verification.
 
 The active goal remains open until the remaining runtime/menu gaps and GitHub
@@ -198,3 +198,5 @@ Generic relay automation actions now require a concrete assigned relay. Setup an
 Clearing a numeric setup field now preserves an empty value instead of converting it to zero. Browser verification cleared AC Circuit 1 relay 3: the field remained empty and setup displayed invalid relay channel; restoring 3 removed the issue. This prevents accidental selection of relay/GPIO zero. RV length now rejects empty, nonnumeric and out-of-range values. Existing 43 frontend tests and the production build pass.
 
 Automation readiness now checks the current configured source/action catalog before displaying Watching trigger. Missing trigger sources, actions, restore sources and restore actions show Needs configuration immediately. Runtime action errors retain priority, and disabled rules remain visibly disabled. Browser verification confirmed the orphaned AC Breaker 2 rule displays action unavailable on both dashboard and Automation page. All 44 frontend tests and the production build pass.
+
+Setup and firmware reject ambiguous inventory identities (path separators, whitespace and reserved object keys) before saving. Generated identities already meet these requirements. Friendly labels retain UTF-8 support. Existing imported IDs are not silently rewritten because references must be corrected together. All 45 frontend tests, 20 firmware tests and both builds pass.

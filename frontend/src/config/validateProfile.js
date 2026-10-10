@@ -49,7 +49,7 @@ export function validateProfile(profile) {
     if (items.length > limit) errors.push(`${section}: maximum ${limit} items`)
     for (const item of items) {
       if (!item || typeof item !== 'object') { errors.push(`${section}: invalid item`); continue }
-      if (typeof item.id !== 'string' || !item.id || utf8Length(item.id) > 32 || ids.has(item.id)) errors.push(`${section}: missing, duplicate or oversized item identity (maximum 32 UTF-8 bytes)`)
+      if (typeof item.id !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/.test(item.id) || ['constructor', 'prototype'].includes(item.id) || ids.has(item.id)) errors.push(`${section}: invalid or duplicate item identity; use 1–32 letters, digits, hyphens or underscores, beginning with a letter or digit`)
       ids.add(item.id)
       if (!item.label?.trim() || utf8Length(item.label) > 48) errors.push(`${section}: labels must contain text using at most 48 UTF-8 bytes`)
       for (const [key, [min, max]] of Object.entries(numericRanges[section] || {})) {

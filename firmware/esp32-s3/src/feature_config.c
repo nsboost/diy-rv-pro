@@ -458,6 +458,14 @@ static bool validate_profile_json(const cJSON *root, char *error, size_t error_l
                 set_error(error, error_len, "Every configured item requires an ID of 1 to 32 characters");
                 return false;
             }
+            const char *identity = id->valuestring;
+            const char *letters_digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            if (strchr(letters_digits, identity[0]) == NULL ||
+                strspn(identity, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-") != strlen(identity) ||
+                strcmp(identity, "constructor") == 0 || strcmp(identity, "prototype") == 0) {
+                set_error(error, error_len, "Item ID must use letters, digits, hyphens or underscores, beginning with a letter or digit");
+                return false;
+            }
             for (size_t j = 0; j <= i; ++j) {
                 const cJSON *previous = NULL;
                 cJSON_ArrayForEach(previous, cJSON_GetObjectItemCaseSensitive(root, ARRAY_LIMITS[j].name)) {

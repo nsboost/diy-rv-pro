@@ -195,6 +195,12 @@ void test_duplicate_and_missing_device_ids_are_rejected(void)
     TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG, feature_config_update_from_json(&features, root, error, sizeof(error)));
     cJSON_ReplaceItemInObjectCaseSensitive(second, "id", cJSON_CreateString("distinct-id"));
     TEST_ASSERT_EQUAL(ESP_OK, feature_config_update_from_json(&features, root, error, sizeof(error)));
+    const char *invalid_ids[] = {"zone.1", "__proto__", "constructor", "prototype", "living room"};
+    for (size_t i = 0; i < sizeof(invalid_ids) / sizeof(invalid_ids[0]); ++i) {
+        cJSON_ReplaceItemInObjectCaseSensitive(second, "id", cJSON_CreateString(invalid_ids[i]));
+        TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG, feature_config_update_from_json(&features, root, error, sizeof(error)));
+    }
+    cJSON_ReplaceItemInObjectCaseSensitive(second, "id", cJSON_CreateString("distinct-id"));
     cJSON_AddItemToArray(cJSON_GetObjectItemCaseSensitive(root, "customIo"), cJSON_Duplicate(second, true));
     TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG, feature_config_update_from_json(&features, root, error, sizeof(error)));
     cJSON_Delete(root);
