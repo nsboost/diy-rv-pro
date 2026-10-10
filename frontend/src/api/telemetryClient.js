@@ -262,6 +262,19 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
             throw new Error('HVAC sensor unavailable')
           }
           if (command === 'turnOn' && zone.sensorStatus !== 'ok') throw new Error('HVAC sensor unavailable')
+          const mode = action.mode || action.settings?.mode
+          const modeChange = mode !== undefined || action.type === 'hvac.toggleEquipment' && action.equipment === 'auto'
+          if (modeChange) {
+            const effectiveMode = mode || (zone.auto ? 'Off' : 'Auto')
+            const outputs = {Cool:['ac','heatPump'],Heat:['furnace','heatPump'],Fan:['fan'],Auto:['ac','furnace','heatPump','fan'],Off:['ac','furnace','heatPump','fan']}[effectiveMode] || []
+            for (const equipment of outputs) {
+              const output = `hvac.${zone.id}.${equipment}`
+              if (!systems.some(system => system.id === output)) continue
+              if (effectiveMode === 'Off' && !zone[equipment]) continue
+              const restriction = effectiveMode === 'Off' ? 'blockOff' : 'blockOn'
+              if (Object.entries(blocked[output] || {}).some(([id,value]) => value === restriction && current.automationRules.some(rule => rule.id === id && rule.enabled))) throw new Error('HVAC mode prevented by an active blocking rule')
+            }
+          }
         }
         if (target && command) {
           const enabled = id => current.automationRules.some(rule => rule.id === id && rule.enabled)
@@ -373,6 +386,8 @@ export function applyControlAction(currentTelemetry, action) {
       throw new Error('HVAC mode not supported')
     }
     zone.mode = action.mode
+    zone.auto = action.mode === 'Auto'
+    if (action.mode === 'Off') for (const equipment of ['ac','furnace','heatPump','fan','auto']) zone[equipment] = false
   }
 
   if (action.type === 'hvac.setTarget') {
@@ -421,6 +436,7 @@ export function applyControlAction(currentTelemetry, action) {
     zone.mode = action.settings.mode || zone.mode
     zone.setpointF = zone.mode === 'Heat' ? heatSetpointF : coolSetpointF
     zone.auto = zone.mode === 'Auto'
+    if (zone.mode === 'Off') for (const equipment of ['ac','furnace','heatPump','fan']) zone[equipment] = false
   }
 
   if (action.type === 'hvac.toggleEquipment') {

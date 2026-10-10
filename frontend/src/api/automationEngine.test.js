@@ -22,6 +22,23 @@ test('rule validation rejects coerced flags, unsafe identities and oversized dev
   assert.equal(normalizeAutomationRule({...alertRule,name:'é'.repeat(48)}).name.length,48)
 })
 
+test('manual HVAC modes respect output interlocks and Off clears active equipment', () => {
+  const controller = createLocalController(cloneTelemetry(), {initialProfile:demoProfile})
+  const now = Date.now()
+  controller.setReadings(demoReadings(now))
+  controller.dispatch({type:'hvac.setMode',zoneId:'zone-1',mode:'Off'})
+  controller.dispatch({type:'automation.upsert',rule:{id:'block-cooling',name:'Block cooling',enabled:true,trigger:{source:'battery.voltage',operator:'>',value:'0',holdFor:'0 sec'},action:{type:'block',target:'hvac.zone-1.ac',command:'blockOn'},reverse:{enabled:false}}})
+  controller.tick(now)
+  assert.throws(() => controller.dispatch({type:'hvac.setMode',zoneId:'zone-1',mode:'Cool'}), /active blocking rule/)
+  assert.throws(() => controller.dispatch({type:'hvac.toggleEquipment',zoneId:'zone-1',equipment:'auto'}), /active blocking rule/)
+  controller.dispatch({type:'automation.setEnabled',id:'block-cooling',enabled:false})
+  controller.dispatch({type:'hvac.toggleEquipment',zoneId:'zone-1',equipment:'ac'})
+  assert.equal(controller.getTelemetry().hvacZones[0].ac,true)
+  controller.dispatch({type:'hvac.setMode',zoneId:'zone-1',mode:'Off'})
+  assert.equal(controller.getTelemetry().hvacZones[0].ac,false)
+  assert.equal(controller.getTelemetry().hvacZones[0].auto,false)
+})
+
 test('clock comparisons use HH:MM consistently and reject invalid times', () => {
   for (const [operator, minute, expected] of [['=', 390, true], ['!=', 391, true], ['>', 391, true], ['<', 389, true], ['>=', 390, true], ['<=', 390, true]]) {
     const condition = { source: 'time.local', operator, value: '06:30' }
