@@ -969,11 +969,11 @@ export default function App() {
         const token = getAdminToken()
         const snapshot = await fetchTelemetry()
         if (token) {
+          const config = await fetchConfig(token)
+          if (!cancelled) setSystemProfile(config.features)
           const discovery = await requestControllerJson('/api/temperature/devices', {headers: {Authorization: `Bearer ${token}`}}).catch(() => null)
           if (discovery) {
             const devices = discovery.devices
-            const config = await fetchConfig(token)
-            setSystemProfile(config.features)
             snapshot.temperatures = devices.flatMap(device => config.features.temperatureZones.filter(sensor => sensor.busId === device.busId && sensor.address?.toLowerCase() === device.address?.toLowerCase()).map(sensor => ({...device, id: sensor.id, sampledAt: Date.now() - device.ageMs})))
           }
         }
@@ -1013,10 +1013,9 @@ export default function App() {
           setSystemProfile(normalizeSystemProfile(config.features))
         }
       })
-      .catch(() => {
-        if (!cancelled) {
-          setSystemProfile(normalizeSystemProfile(controller.getConfig().features))
-        }
+      .catch(error => {
+        // Retain the current inventory; failed hardware reads must not substitute demo defaults.
+        if (!cancelled && token) setControlError(error.message || 'Controller configuration could not be refreshed.')
       })
 
     return () => {
