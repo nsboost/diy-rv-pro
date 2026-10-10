@@ -62,6 +62,17 @@ test('clock comparisons use HH:MM consistently and reject invalid times', () => 
   assert.throws(() => validateCondition({ source: 'time.local', operator: '=', value: '25:00' }), /HH:MM/)
 })
 
+test('numeric ranges reject empty endpoints and cannot match nonnumeric readings', () => {
+  for (const operator of ['between','outside']) {
+    for (const value of [',80','-10,',' , 80','10, ','10,10','80,10']) assert.throws(() => validateCondition({source:'battery.voltage',operator,value}), /two increasing numbers/)
+    const condition = {source:'battery.voltage',operator,value:'0,80'}
+    validateCondition(condition)
+    for (const value of ['running',true,false,undefined,null,NaN]) assert.equal(compareCondition(condition,value),false)
+  }
+  assert.equal(compareCondition({source:'battery.voltage',operator:'outside',value:'0,80'},90),true)
+  assert.equal(compareCondition({source:'battery.voltage',operator:'between',value:'0,80'},0),true)
+})
+
 test('addressed sensor triggers after continuous hold, once, and restores once', () => {
   const state = {}
   const telemetry = { temperatures: [{ id: 'demo-temp-2', tempF: 80, status: 'ok', sampledAt: 1000 }] }

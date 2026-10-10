@@ -89,7 +89,7 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
   runtime. Temperature-based alerts run in a background task. Physical equipment
   drivers, other source values, time synchronization and hardware bench checks
   remain incomplete; equipment prototype simulation is labeled explicitly.
-- The frontend suite currently contains 55 passing tests, including malformed
+- The frontend suite currently contains 56 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
   contain 21 passing tests including generator stop assignments, assigned pump outputs, boolean flag validation, rule identity retention, disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
@@ -228,3 +228,5 @@ Firmware configuration now requires separate stop relays for enabled three-wire 
 Firmware tank configuration now requires positive capacity and distinct explicit empty/full calibration for enabled tanks, matching setup and rejecting direct API submissions that bypassed those requirements. Disabled tanks can retain incomplete calibration. Host regression checks reject identical readings and zero capacity and accept disabled retention. All 21 firmware tests and the ESP32-S3 integration build pass; physical tank acquisition remains pending.
 
 The changes comparison no longer requires a dummy threshold when saving trigger or restore conditions. The editor disables the unused threshold field and explains that no threshold is needed. Normalization preserves scalar zero/false condition and action values rather than converting them to empty text. An evaluator regression verifies a threshold-free changes rule saves and reacts to a reading change. All 55 frontend tests and the production build pass; the conditional editor hint is build-verified.
+
+Numeric automation ranges now reject missing endpoints rather than interpreting empty text as zero. Between/outside comparisons require a numeric source reading; text and boolean readings cannot activate an outside-range action. Regression tests cover empty, reversed/equal endpoints, invalid reading types and explicit zero boundaries. All 56 frontend tests and the production build pass.

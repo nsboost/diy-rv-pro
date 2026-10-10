@@ -31,8 +31,9 @@ export function validateCondition(condition) {
       if (range.length !== 2) throw new Error('Time range must use HH:MM-HH:MM')
       range.forEach(timeMinute)
     } else {
-      const range = String(condition.value).split(',').map(value => Number(value.trim()))
-      if (range.length !== 2 || !range.every(Number.isFinite) || range[0] >= range[1]) throw new Error('Range must use two increasing numbers, such as 65,75')
+      const parts = String(condition.value).split(',').map(value => value.trim())
+      const range = parts.map(Number)
+      if (parts.length !== 2 || parts.some(value => value === '') || !range.every(Number.isFinite) || range[0] >= range[1]) throw new Error('Range must use two increasing numbers, such as 65,75')
     }
   } else if (condition.source === 'time.local') {
     timeMinute(condition.value)
@@ -45,6 +46,7 @@ export function compareCondition(condition, value, previous) {
   if (value === undefined || value === null || (typeof value === 'number' && !Number.isFinite(value))) return false
   if (condition.operator === 'changes') return previous !== undefined && value !== previous
   if (['between', 'outside'].includes(condition.operator)) {
+    if (typeof value !== 'number') return false
     let within
     if (condition.source === 'time.local') {
       const [start, end] = String(condition.value).split('-').map(timeMinute)
