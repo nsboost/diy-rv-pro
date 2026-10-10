@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchConfig, getAdminToken, saveConfig } from '../api/telemetryClient.js'
 
-export default function ControllerSettings({ telemetry, apiOnline, onProfile, onSetup }) {
+export default function ControllerSettings({ telemetry, apiOnline, onProfile, onSetup, onLoadDemo, onRestoreDemo }) {
   const [status, setStatus] = useState(null)
   const [config, setConfig] = useState(null)
   const [token, setToken] = useState('')
@@ -64,6 +64,7 @@ export default function ControllerSettings({ telemetry, apiOnline, onProfile, on
       <button className="primary-action" type="submit" disabled={busy}>{status.setupComplete ? 'Save Network Configuration' : 'Complete First-Boot Setup'}</button>
     </form>}
     <button className="wide-action" onClick={onSetup} type="button">Open Configuration Wizard</button>
+    {onLoadDemo && <div className="settings-form"><h3>Sample RV</h3><p>Load a sample inventory with two addressed temperature sensors, independent HVAC zones, battery, solar, inverter, generator and tanks. Your current demo inventory is backed up for restoration. Rules and alert history are retained.</p><button className="secondary-action" type="button" disabled={busy} onClick={() => run(async () => {await onLoadDemo();setMessage('Sample RV loaded in this browser. All values and equipment actions are simulated.')})}>Load Sample RV</button>{onRestoreDemo && <button className="secondary-action" type="button" disabled={busy} onClick={() => run(async () => {await onRestoreDemo();setMessage('Previous demo inventory restored.')})}>Restore Previous Demo Inventory</button>}</div>}
     {message && <p className="configurator-status" role="status">{message}</p>}
   </section>
 }

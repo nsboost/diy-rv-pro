@@ -41,6 +41,7 @@ const automationCommandTypes = new Set([
 ])
 
 export function createLocalController(seed = cloneTelemetry(), { storage, initialProfile = defaultSystemProfile } = {}) {
+  const demoBaseline = structuredClone(seed)
   let telemetry = seed
   let config = { ...defaultConfig, features: normalizeSystemProfile(initialProfile) }
   let storageError = ''
@@ -109,6 +110,14 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
       const features = normalizeSystemProfile(nextConfig.features || config.features)
       const issues = validateProfile(features)
       if (issues.length) throw new Error(issues.join('; '))
+      const installed = (profile, section) => (profile[section] || []).some(item => item.enabled)
+      for (const [section, group] of [['batteries','battery'], ['solarChargeControllers','solar'], ['inverters','inverter'], ['weatherStations','weather'], ['generators','generator']]) {
+        if (installed(features, section) && !installed(config.features, section)) telemetry[group] = structuredClone(demoBaseline[group])
+      }
+      const hasLoads = profile => installed(profile, 'acBreakers') || installed(profile, 'dcCircuits')
+      if (hasLoads(features) && !hasLoads(config.features)) telemetry.loads = structuredClone(demoBaseline.loads)
+      const hasPower = profile => installed(profile, 'batteries') || installed(profile, 'solarChargeControllers') || hasLoads(profile)
+      if (hasPower(features) && !hasPower(config.features)) telemetry.powerHistory = structuredClone(demoBaseline.powerHistory)
       config = { ...config, ...nextConfig, features }
       persist(); emit()
       return structuredClone(config)

@@ -918,6 +918,7 @@ export default function App() {
   const [systemProfile, setSystemProfile] = useState(() => controller.getConfig().features)
   const [controlError, setControlError] = useState('')
   const [nightMode, setNightMode] = useState(false)
+  const [demoBackup, setDemoBackup] = useState(() => { try {return JSON.parse(window.localStorage.getItem('diy-rv-demo-inventory-backup') || 'null')} catch {return null} })
   const [browserSettings, setBrowserSettings] = useState(() => {
     try { return loadNotificationSettings(window.localStorage, controller.getTelemetry().notificationSettings) } catch { return loadNotificationSettings(null) }
   })
@@ -1070,6 +1071,18 @@ export default function App() {
     return saved.message
   }
 
+  const applyDemoInventory = profile => {
+    if (!import.meta.env.DEV || apiOnline || getAdminToken() || snapshot.controller.mode !== 'simulation') throw new Error('Sample inventory is available only in the standalone demo')
+    controller.updateConfig({features:profile})
+    setSystemProfile(controller.getConfig().features)
+    setTelemetry(controller.tick())
+  }
+  const loadSampleRv = () => {
+    const backup = demoBackup || controller.getConfig().features
+    window.localStorage.setItem('diy-rv-demo-inventory-backup', JSON.stringify(backup))
+    applyDemoInventory(demoProfile)
+    setDemoBackup(backup)
+  }
   const selectSection = id => {
     setActiveSection(id)
     setMobileNavOpen(false)
@@ -1246,7 +1259,7 @@ export default function App() {
         title="Settings"
         description="Controller connection state, authentication status, and system-level setup entry points."
       >
-        <ControllerSettings telemetry={telemetry} apiOnline={apiOnline} onProfile={profile => setSystemProfile(normalizeSystemProfile(profile))} onSetup={() => selectSection('setup')} />
+        <ControllerSettings telemetry={telemetry} apiOnline={apiOnline} onProfile={profile => setSystemProfile(normalizeSystemProfile(profile))} onSetup={() => selectSection('setup')} onLoadDemo={import.meta.env.DEV && !apiOnline && !getAdminToken() && snapshot.controller.mode === 'simulation' ? loadSampleRv : undefined} onRestoreDemo={demoBackup ? () => applyDemoInventory(demoBackup) : undefined} />
       </PageView>
     )
   }

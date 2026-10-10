@@ -92,6 +92,22 @@ test('saved rules cannot operate a generator changed to monitor-only', () => {
   assert.ok(snapshot.notifications.some(item => item.ruleId === 'start-removed' && item.message.includes('unavailable')))
 })
 
+test('adding demo power equipment restores simulated values after unconfigured projection', () => {
+  const empty = structuredClone(demoProfile)
+  empty.batteries=[]; empty.solarChargeControllers=[]; empty.inverters=[]; empty.acBreakers=[]
+  const controller = createLocalController(cloneTelemetry(), {initialProfile:empty})
+  const before = controller.tick(1000)
+  assert.equal(before.battery.voltage,null)
+  assert.deepEqual(before.powerHistory,[])
+  controller.updateConfig({features:demoProfile})
+  const after = controller.tick(2000)
+  assert.ok(Number.isFinite(after.battery.voltage))
+  assert.ok(Number.isFinite(after.solar.watts))
+  assert.ok(Number.isFinite(after.loads.watts))
+  assert.ok(after.powerHistory.length)
+  assert.equal(after.controller.mode,'simulation')
+})
+
 test('browser alerts work independently of in-app notification preference', () => {
   const original = globalThis.Notification
   const delivered = []

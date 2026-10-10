@@ -89,7 +89,7 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
   runtime. Temperature-based alerts run in a background task. Physical equipment
   drivers, other source values, time synchronization and hardware bench checks
   remain incomplete; equipment prototype simulation is labeled explicitly.
-- The frontend suite currently contains 35 passing tests, including malformed
+- The frontend suite currently contains 36 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
   contain 18 passing tests including rule identity retention, disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
@@ -162,6 +162,13 @@ Firmware evaluator state follows stable rule identities rather than list indexes
 Editing, enabling, disabling or deleting a rule resets that rule without clearing
 unrelated successful activations. Host regression tests verify reordering,
 individual reset and deletion do not repeat unrelated alerts (18 tests pass).
+
+Standalone demo Settings can load a sample RV inventory and restore the previous
+inventory from a browser backup. Rules and alert history are retained; loading
+again preserves the original backup. The controls are unavailable on controller
+sessions. Newly added demo equipment restores its simulated metrics and history
+instead of remaining empty after prior removal. Live browser checks verified
+load/restore and the populated dashboard; 36 frontend tests and its build pass.
 
 Stored notification recovery now validates the version, bounded field types,
 unique alert identities and nonnegative timestamps before publishing the state.
