@@ -139,6 +139,7 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
       for (const target of Object.keys(blocked)) for (const id of Object.keys(blocked[target])) if (!telemetry.automationRules.some(rule => rule.id === id && rule.enabled)) delete blocked[target][id]
       for (const { rule, action, restoring } of evaluateRules(telemetry.automationRules, telemetry, runtime, now)) {
         try {
+          if (!controlSystems(config.features).some(system => system.id === action.target && system.commands.includes(action.command))) throw new Error('Configured equipment target or command is unavailable')
           if (action.command === 'sendAlert') {
             notify(action.value || rule.name, 'info', rule.id)
           } else if (action.command?.startsWith('block')) {

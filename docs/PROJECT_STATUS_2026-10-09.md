@@ -89,7 +89,7 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
   runtime. Temperature-based alerts run in a background task. Physical equipment
   drivers, other source values, time synchronization and hardware bench checks
   remain incomplete; equipment prototype simulation is labeled explicitly.
-- The frontend suite currently contains 31 passing tests, including malformed
+- The frontend suite currently contains 32 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
   contain 16 passing tests including time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
@@ -132,6 +132,12 @@ the demo engine on startup, so switching between controller and demo sessions
 does not leave menu choices out of sync with delivery. Live browser verification
 confirmed the in-app choice survives reload and acknowledged alerts stay read.
 The updated 31-test suite and frontend production build pass.
+
+The demo evaluator now validates every action against the current configured
+equipment and supported commands immediately before execution. A saved rule
+cannot continue operating a generator switched to monitor-only; it reports the
+unavailable target and retains pending activation. The 32-test frontend suite
+and production build pass with this regression covered.
 
 Stored notification recovery now validates the version, bounded field types,
 unique alert identities and nonnegative timestamps before publishing the state.

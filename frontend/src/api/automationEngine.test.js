@@ -77,6 +77,21 @@ test('blocking rule prevents generator action irrespective of rule ordering', ()
 })
 
 
+test('saved rules cannot operate a generator changed to monitor-only', () => {
+  const controller = createLocalController(cloneTelemetry(), {initialProfile: demoProfile})
+  controller.dispatch({type:'automation.upsert',rule:{id:'start-removed',name:'Temperature start',enabled:true,
+    trigger:{source:'temperature.demo-temp-1.tempF',operator:'>',value:'70',holdFor:'0 sec'},
+    action:{type:'command',target:'generator',command:'start'},reverse:{enabled:false}}})
+  const config = controller.getConfig()
+  config.features.generators[0].controlStrategy = 'monitor-only'
+  controller.updateConfig(config)
+  controller.setReadings(demoReadings(1000))
+  const snapshot = controller.tick(1000)
+  assert.equal(snapshot.generator.running, false)
+  assert.equal(snapshot.ruleRuntime['start-removed'].active, false)
+  assert.ok(snapshot.notifications.some(item => item.ruleId === 'start-removed' && item.message.includes('unavailable')))
+})
+
 test('browser alerts work independently of in-app notification preference', () => {
   const original = globalThis.Notification
   const delivered = []
