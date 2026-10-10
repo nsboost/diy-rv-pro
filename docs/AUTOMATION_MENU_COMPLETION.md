@@ -13,6 +13,13 @@ does not silently save an enabled preference. Actual OS delivery still requires
 a granted permission and remains unverified. Mobile navigation backdrop dismissal
 was also verified after correcting the misplaced pending-dialog guard.
 
+Recovery follow-up: the backup firmware build passed (996,481 bytes flash,
+77,872 bytes static RAM). Saved-record loading now checks the complete binary
+record boundary, rejecting embedded null terminators and hidden suffix bytes.
+All 29 firmware host tests pass, including that regression; the updated ESP32-S3
+build also passed (996,705 bytes flash, 77,872 bytes static RAM). Physical fault and
+recovery tests remain outstanding.
+
 | Requirement | Current evidence | Remaining acceptance work |
 | --- | --- | --- |
 | GPIO inventory and addressed zone selection | Validator, inventory editor, address-specific mappings and host regressions; two-zone populated demo | Verify physical bus wiring, selected ROM addresses and independent zones on ESP32 |

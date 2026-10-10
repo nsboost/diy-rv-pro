@@ -216,12 +216,12 @@ esp_err_t automation_runtime_start(const diy_config_t *config) {
       char *payload = malloc(size);
       if (payload && nvs_get_blob(handle, "state", payload, &size) == ESP_OK &&
           size > 0 && payload[size - 1] == '\0') {
-        cJSON *saved = cJSON_ParseWithLengthOpts(payload, size, NULL, true),
+        char error[96];
+        cJSON *saved = automation_parse_saved_blob(payload, size, error, sizeof(error)),
               *saved_rules = cJSON_GetObjectItemCaseSensitive(saved, "rules"),
               *saved_alerts =
                   cJSON_GetObjectItemCaseSensitive(saved, "notifications");
-        char error[96];
-        if (automation_validate_saved_state(saved, error, sizeof(error))) {
+        if (saved) {
           cJSON *loaded_rules = cJSON_Duplicate(saved_rules, true);
           cJSON *loaded_alerts = cJSON_Duplicate(saved_alerts, true);
           const cJSON *activation = cJSON_GetObjectItemCaseSensitive(saved, "activeRuleIds");

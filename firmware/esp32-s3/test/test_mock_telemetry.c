@@ -546,6 +546,25 @@ static void test_timezone_rules_preserve_dst_and_reject_unknown_zones(void) {
     TEST_ASSERT_NULL(diy_timezone_posix("Invalid/Zone"));
     TEST_ASSERT_NULL(diy_timezone_posix(NULL));
 }
+static void test_saved_blob_rejects_hidden_suffix_and_invalid_boundaries(void) {
+    const char valid[] = "{\"version\":2,\"rules\":[],\"notifications\":[],\"activeRuleIds\":[]} \n";
+    char error[96];
+    cJSON *state = automation_parse_saved_blob(valid, sizeof(valid), error, sizeof(error));
+    TEST_ASSERT_NOT_NULL(state);
+    cJSON_Delete(state);
+    char hidden[sizeof(valid) + 3];
+    memcpy(hidden, valid, sizeof(valid));
+    memcpy(hidden + sizeof(valid), "bad", 3);
+    hidden[sizeof(hidden) - 1] = '\0';
+    TEST_ASSERT_NULL(automation_parse_saved_blob(hidden, sizeof(hidden), error, sizeof(error)));
+    TEST_ASSERT_NULL(automation_parse_saved_blob(valid, sizeof(valid) - 1, error, sizeof(error)));
+    TEST_ASSERT_NULL(automation_parse_saved_blob(valid, 65538, error, sizeof(error)));
+    TEST_ASSERT_NULL(automation_parse_saved_blob(NULL, 0, error, sizeof(error)));
+    const char junk[] = "{\"version\":1,\"rules\":[],\"notifications\":[]}bad";
+    TEST_ASSERT_NULL(automation_parse_saved_blob(junk, sizeof(junk), error, sizeof(error)));
+    const char wrong[] = "{\"version\":9,\"rules\":[],\"notifications\":[]}";
+    TEST_ASSERT_NULL(automation_parse_saved_blob(wrong, sizeof(wrong), error, sizeof(error)));
+}
 static void test_saved_notifications_reject_corrupt_payloads(void) {
     char error[96];
     cJSON *state=cJSON_Parse("{\"version\":1,\"rules\":[],\"notifications\":[{\"id\":\"alert-1\",\"message\":\"Bedroom warm\",\"ruleId\":\"rule-1\",\"severity\":\"info\",\"read\":false,\"uptimeMs\":1000}]}");
@@ -689,6 +708,7 @@ void app_main(void)
 #endif
 {
     UNITY_BEGIN();
+    RUN_TEST(test_saved_blob_rejects_hidden_suffix_and_invalid_boundaries);
     RUN_TEST(test_saved_state_allocation_failures_never_return_partial_record);
     RUN_TEST(test_saved_activation_versions_and_references);
     RUN_TEST(test_activation_restore_excludes_timers_and_rejects_invalid_ids);

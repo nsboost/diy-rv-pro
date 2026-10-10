@@ -185,6 +185,20 @@ bool automation_validate_rules(const cJSON *rules, char *error,
              "Automation configuration exceeds storage limit");
   return valid;
 }
+cJSON *automation_parse_saved_blob(const char *bytes, size_t size, char *error, size_t error_len) {
+  if (!bytes || !size || size > 65537 || bytes[size - 1] != '\0' ||
+      memchr(bytes, '\0', size - 1)) {
+    if (error && error_len) snprintf(error, error_len, "Stored automation blob is invalid");
+    return NULL;
+  }
+  const char *end = NULL;
+  cJSON *state = cJSON_ParseWithLengthOpts(bytes, size, &end, true);
+  if (!state || end != bytes + size - 1 || !automation_validate_saved_state(state, error, error_len)) {
+    cJSON_Delete(state);
+    return NULL;
+  }
+  return state;
+}
 bool automation_validate_saved_state(const cJSON *state, char *error,
                                      size_t error_len) {
   const cJSON *version = get(state, "version"),
