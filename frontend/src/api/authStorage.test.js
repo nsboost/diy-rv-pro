@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {clearAdminToken, storeAdminToken} from './authStorage.js'
+import {clearAdminToken, storeAdminToken, readAdminToken} from './authStorage.js'
 
 test('sign-out attempts both token stores even when one is inaccessible', () => {
   let cleared = false
@@ -63,4 +63,19 @@ test('failed rollback reports that credential storage needs attention', () => {
   local.setItem = (key,value) => {if(value === 'remembered') throw new Error('Rollback denied');write(key,value)}
   session.removeItem = () => {throw new Error('Clear denied')}
   assert.throws(() => storeAdminToken('replacement',true,()=>session,()=>local), /Could not save or restore all controller credentials/)
+})
+
+test('credential reading still checks remembered storage when session access fails', () => {
+  assert.equal(readAdminToken([()=>{throw new Error('Denied')},()=>tokenStorage('remembered')]),'remembered')
+  assert.equal(readAdminToken([()=>({getItem:()=>{throw new Error('Denied')}}),()=>tokenStorage('remembered')]),'remembered')
+})
+
+test('session credentials take priority and avoid unnecessary remembered reads', () => {
+  let reads = 0
+  assert.equal(readAdminToken([()=>tokenStorage('session'),()=>{reads++;return tokenStorage('remembered')}]),'session')
+  assert.equal(reads,0)
+})
+
+test('no readable credential returns an empty token without inventing authentication', () => {
+  assert.equal(readAdminToken([()=>tokenStorage(),()=>{throw new Error('Denied')}]),'')
 })

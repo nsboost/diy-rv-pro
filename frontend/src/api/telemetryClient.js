@@ -1,3 +1,4 @@
+import { readAdminToken } from './authStorage.js'
 import { requestControllerJson } from './controllerRequest.js'
 import { cloneTelemetry, defaultConfig } from '../data/mockTelemetry.js'
 import { defaultSystemProfile, normalizeSystemProfile } from '../config/systemProfile.js'
@@ -551,7 +552,7 @@ export function normalizeAutomationRule(rule) {
 
 export function getAdminToken() {
   if (typeof window === 'undefined') return ''
-  try { return window.sessionStorage.getItem('diy-rv-admin-token') || window.localStorage.getItem('diy-rv-admin-token') || '' } catch { return '' }
+  return readAdminToken([() => window.sessionStorage, () => window.localStorage])
 }
 
 export async function fetchTelemetry(token = getAdminToken()) {

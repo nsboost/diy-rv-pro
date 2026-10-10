@@ -349,3 +349,7 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 ### GitHub validation reconciliation (October 10)
 - Queried live Actions run 38047300593 for commit 1904cb9: frontend succeeded; ESP32 firmware compilation and Windows firmware bootstrap were still running. These results do not establish complete remote CI success.
 - Added workflow concurrency by workflow/ref, cancelling superseded revisions when a newer branch or PR push arrives. Independent branches and pull requests retain separate validation groups. This avoids accumulating obsolete firmware builds while changes are reconciled.
+
+### Independent credential-store reads (October 10)
+- Browser credential lookup now reads session and remembered storage independently. Inaccessible session storage no longer hides an available remembered token, and session credentials retain priority. No readable token returns unauthenticated state.
+- Validation: 91 frontend tests and production build passed, including getter/read failures, session precedence, and absent credentials. No new credential was entered or saved during verification.

@@ -37,3 +37,13 @@ export function storeAdminToken(value, remember, getSessionStorage, getLocalStor
       : 'Could not save or restore all controller credentials. Clear this site browser storage before leaving the controller unattended.')
   }
 }
+
+export function readAdminToken(storages) {
+  for (const getStorage of storages) {
+    try {
+      const token = getStorage().getItem('diy-rv-admin-token')
+      if (typeof token === 'string' && token) return token
+    } catch { /* Another credential store may still be available. */ }
+  }
+  return ''
+}
