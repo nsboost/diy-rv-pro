@@ -352,6 +352,14 @@ static void test_automation_zone_sources_follow_addressed_sensor(void) {
     TEST_ASSERT_TRUE(cJSON_GetObjectItemCaseSensitive(sources,"hvac.zone1.tempF")->valuedouble == 72);
     TEST_ASSERT_TRUE(cJSON_GetObjectItemCaseSensitive(sources,"hvac.zone2.tempF")->valuedouble == 70);
     cJSON_Delete(sources);
+    cJSON *device_list = cJSON_GetObjectItemCaseSensitive(devices, "devices");
+    cJSON_AddItemToArray(device_list, cJSON_Duplicate(living_device, true));
+    sources=automation_temperature_sources(profile,devices,false);
+    TEST_ASSERT_TRUE(cJSON_IsNull(cJSON_GetObjectItemCaseSensitive(sources,"temperature.living.tempF")));
+    TEST_ASSERT_TRUE(cJSON_IsNull(cJSON_GetObjectItemCaseSensitive(sources,"hvac.zone1.tempF")));
+    TEST_ASSERT_TRUE(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(sources,"hvac.zone2.tempF")));
+    cJSON_Delete(sources);
+    cJSON_DeleteItemFromArray(device_list, 2);
     cJSON *bedroom=cJSON_GetArrayItem(cJSON_GetObjectItemCaseSensitive(devices,"devices"),0);
     cJSON_ReplaceItemInObjectCaseSensitive(bedroom,"ageMs",cJSON_CreateNumber(30001));
     sources=automation_temperature_sources(profile,devices,false);

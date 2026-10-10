@@ -34,6 +34,7 @@ cJSON *automation_temperature_sources(const cJSON *profile,
     char key[128];
     snprintf(key, sizeof(key), "temperature.%s.tempF", text(sensor, "id"));
     const cJSON *reading = NULL, *device;
+    unsigned matches = 0;
     if (!strcmp(text(sensor, "sensorType"), "ds18b20") &&
         *text(sensor, "address") && *text(sensor, "busId")) {
       cJSON_ArrayForEach(device,
@@ -41,10 +42,11 @@ cJSON *automation_temperature_sources(const cJSON *profile,
         if (same_address(text(device, "address"), text(sensor, "address")) &&
             !strcmp(text(device, "busId"), text(sensor, "busId"))) {
           reading = device;
-          break;
+          matches++;
         }
       }
     }
+    if (matches != 1) reading = NULL;
     const cJSON *age = cJSON_GetObjectItemCaseSensitive(reading, "ageMs"),
                 *value = cJSON_GetObjectItemCaseSensitive(reading, "tempF");
     if (!strcmp(text(reading, "status"), "ok") && cJSON_IsNumber(age) &&

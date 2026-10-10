@@ -363,3 +363,8 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 - Configuration saves now mark temperature acquisition pending restart only when temperature bus inventory or first-boot setup status changes. RV labels, notification/network settings, security sensors and addressed-sensor assignments no longer interrupt an unchanged bus by themselves. An already-pending restart stays pending until reboot; parse/allocation failure conservatively requires restart.
 - 24 firmware host tests passed with added unchanged/changed bus comparisons. Physical configuration-save/discovery behavior remains bench-unverified.
 - ESP32-S3 build passed: static RAM 77,872 bytes; flash 994,557 bytes. No hardware flashed.
+
+### Reject ambiguous firmware temperature readings (October 10)
+- Firmware now requires exactly one discovered reading matching the configured bus and ROM address, consistent with frontend mapping. Duplicate matches supply null to the named sensor and HVAC alias rather than selecting the first reading. Other uniquely mapped zones retain their readings.
+- 24 firmware host tests passed with duplicate-discovery coverage for both named sensor and HVAC alias. Physical bus discovery remains bench-unverified.
+- ESP32-S3 build passed: static RAM 77,872 bytes; flash 994,573 bytes. No hardware flashed.
