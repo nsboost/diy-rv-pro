@@ -94,7 +94,7 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
   notification preferences. Firmware host tests
   contain 13 passing tests including clock comparisons, hold resets, recovery and
   failed-execution retries. ESP32-S3 integration build passes: 76,416 bytes static
-  RAM and 957,189 bytes application flash. Runtime headroom and hardware operation
+  RAM and 959,313 bytes application flash. Runtime headroom and hardware operation
   still need bench verification.
 
 The active goal remains open until the remaining runtime/menu gaps and GitHub
@@ -105,5 +105,7 @@ Controller Settings now includes connection, session-token storage, optional bro
 
 The firmware clock comparison syntax now matches the browser (`HH:MM`). Clock
 sources still require synchronization before schedules can run on the controller.
-The Wi-Fi station setup currently sets credentials but lacks connection/reconnect
-event handling; that configuration workflow remains incomplete.
+Wi-Fi station setup now attempts connection on startup and retries five seconds
+after disconnects or immediate connection errors. Settings reports running station
+status without exposing credentials. Access-point service stays enabled during
+station retries. Physical network connection/recovery testing remains pending.

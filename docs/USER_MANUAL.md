@@ -1,6 +1,6 @@
 # DIY RV PRO user manual
 
-Engineering edition - 2026-09-30. This edition describes the current interface
+Engineering edition - 2026-10-09. This edition describes the current interface
 and explicitly identifies unfinished installed-controller workflows.
 
 ## Current operation
@@ -33,8 +33,8 @@ or older profiles with missing/duplicate identities cannot be saved until their
 identities and references are corrected; the controller does not guess which
 device a conflicting reference intended.
 
-In the development server, a disconnected session without credentials can update
-demo configuration; the result is labeled as a session-only demo update. The
+In the standalone browser demo, configuration is saved in that browser when
+storage is available. Equipment actions are explicitly labeled as simulated. The
 production dashboard requires authentication and controller acknowledgement
 before accepting a saved profile. Connection or save failures remain errors;
 they do not become local saves. A successful device save still requires

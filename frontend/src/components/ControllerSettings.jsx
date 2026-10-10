@@ -30,6 +30,7 @@ export default function ControllerSettings({ telemetry, apiOnline, onProfile, on
   const run = async work => {setBusy(true); setMessage('');try {await work()} catch(error) {setMessage(error.message)} finally {setBusy(false)}}
   return <section className="panel utility-panel" id="section-settings">
     <h2>Controller Connection</h2>
+    {status?.stationStatus && <p role="status">Station Wi-Fi: {({connected:'Connected', connecting:'Connecting / retrying', disabled:'Not configured'})[status.stationStatus] || 'Unknown'}. Network changes apply after restarting the controller.</p>}
     <div className="utility-grid"><span>{apiOnline ? 'Authenticated controller' : telemetry.controller.mode === 'simulation' ? 'Browser demo' : 'Controller disconnected or signed out'}</span><span>Firmware: {telemetry.controller.firmware}</span><span>Address: {telemetry.controller.localIp}</span><span>Authentication: {getAdminToken() ? 'Token saved' : 'Signed out'}</span></div>
     <form className="settings-form" onSubmit={event => {event.preventDefault();run(async () => {
       const value = token.trim();if(value.length < 16 || value.length > 128) throw new Error('Enter the controller admin token')

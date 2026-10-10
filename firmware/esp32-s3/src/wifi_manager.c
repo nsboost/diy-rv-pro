@@ -6,8 +6,57 @@
 #include "esp_log.h"
 #include "esp_netif.h"
 #include "esp_wifi.h"
+#include "esp_timer.h"
 
 static const char *TAG = "wifi_manager";
+static esp_timer_handle_t reconnect_timer;
+static esp_netif_t *station_netif;
+
+const char *wifi_manager_station_status(void)
+{
+    if (!station_netif) return "disabled";
+    wifi_ap_record_t ap;
+    esp_netif_ip_info_t ip = {0};
+    if (esp_wifi_sta_get_ap_info(&ap) == ESP_OK &&
+        esp_netif_get_ip_info(station_netif, &ip) == ESP_OK && ip.ip.addr != 0) {
+        return "connected";
+    }
+    return "connecting";
+}
+
+static void schedule_reconnect(void)
+{
+    // A single pending retry prevents disconnect events from creating a tight loop.
+    esp_err_t result = esp_timer_start_once(reconnect_timer, 5000000);
+    if (result != ESP_OK && result != ESP_ERR_INVALID_STATE) {
+        ESP_LOGW(TAG, "Could not schedule station reconnect: %s", esp_err_to_name(result));
+    }
+}
+
+static void connect_station(void *context)
+{
+    (void)context;
+    esp_err_t result = esp_wifi_connect();
+    if (result != ESP_OK) {
+        ESP_LOGW(TAG, "Station connection attempt failed: %s", esp_err_to_name(result));
+        schedule_reconnect();
+    }
+}
+
+static void station_event(void *context, esp_event_base_t base, int32_t id, void *data)
+{
+    (void)context;
+    (void)data;
+    if (base == WIFI_EVENT && id == WIFI_EVENT_STA_START) {
+        connect_station(NULL);
+    } else if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) {
+        ESP_LOGW(TAG, "Station disconnected; retrying in five seconds. Local AP remains available.");
+        schedule_reconnect();
+    } else if (base == IP_EVENT && id == IP_EVENT_STA_GOT_IP) {
+        esp_timer_stop(reconnect_timer);
+        ESP_LOGI(TAG, "Station connected and obtained an IP address");
+    }
+}
 
 esp_err_t wifi_manager_start(const diy_config_t *config)
 {
@@ -16,7 +65,7 @@ esp_err_t wifi_manager_start(const diy_config_t *config)
 
     esp_netif_create_default_wifi_ap();
     if (config->station_ssid[0] != '\0') {
-        esp_netif_create_default_wifi_sta();
+        station_netif = esp_netif_create_default_wifi_sta();
     }
 
     wifi_init_config_t init_config = WIFI_INIT_CONFIG_DEFAULT();
@@ -44,6 +93,13 @@ esp_err_t wifi_manager_start(const diy_config_t *config)
         strlcpy((char *) sta_config.sta.ssid, config->station_ssid, sizeof(sta_config.sta.ssid));
         strlcpy((char *) sta_config.sta.password, config->station_password, sizeof(sta_config.sta.password));
         ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_config));
+        const esp_timer_create_args_t retry_args = {
+            .callback = connect_station,
+            .name = "wifi_reconnect"
+        };
+        ESP_ERROR_CHECK(esp_timer_create(&retry_args, &reconnect_timer));
+        ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, station_event, NULL));
+        ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, station_event, NULL));
     }
 
     ESP_ERROR_CHECK(esp_wifi_start());

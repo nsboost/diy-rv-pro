@@ -12,6 +12,7 @@
 #include "security_inputs.h"
 #include "temperature_inputs.h"
 #include "static_files.h"
+#include "wifi_manager.h"
 #include "cJSON.h"
 
 static const char *TAG = "api_server";
@@ -72,6 +73,7 @@ static esp_err_t status_handler(httpd_req_t *request)
     cJSON_AddBoolToObject(root, "setupComplete", server_context->config->setup_complete);
     cJSON_AddStringToObject(root, "firmware", "v1.2.7");
     cJSON_AddStringToObject(root, "target", "esp32-s3");
+    cJSON_AddStringToObject(root, "stationStatus", wifi_manager_station_status());
     return send_json(request, root, 200);
 }
 

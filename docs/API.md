@@ -4,7 +4,9 @@ The ESP32-S3 serves the dashboard and local JSON API over the device access poin
 
 ## Endpoints
 
-- `GET /api/status`: device status, setup state, firmware version, and target.
+- `GET /api/status`: device status, setup state, firmware version, target, and
+  `stationStatus` (`disabled`, `connecting`, or `connected`). Station status reflects
+  the running network configuration; saved network changes require a restart.
 - `GET /api/telemetry`: authenticated snapshot, rules and persisted notifications. Equipment telemetry is explicitly marked `controller.equipmentMode: "prototype-simulation"`.
 - `GET /api/config`: sanitized configuration, including the saved RV feature profile. Requires authorization after setup.
 - `PUT /api/config`: first-boot setup and subsequent configuration updates.
