@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { persistSystemProfile } from './saveProfile.js'
+import { persistSystemProfile, isStandaloneDemo } from './saveProfile.js'
 import { defaultSystemProfile } from './systemProfile.js'
 
 test('device save requires authentication and never falls back to demo', async () => {
@@ -45,4 +45,13 @@ test('explicit demo save is labeled and never contacts a controller', async () =
     demo: true, saveRemote: async () => { throw new Error('Unexpected request') }
   })
   assert.match(result.message, /Demo.*this browser/)
+})
+
+test('only an explicit standalone simulation can save demo configuration', () => {
+  const session = {development:true,online:false,token:'',mode:'simulation'}
+  assert.equal(isStandaloneDemo(session),true)
+  for (const mode of ['device',undefined,'prototype']) assert.equal(isStandaloneDemo({...session,mode}),false)
+  assert.equal(isStandaloneDemo({...session,online:true}),false)
+  assert.equal(isStandaloneDemo({...session,token:'saved-token'}),false)
+  assert.equal(isStandaloneDemo({...session,development:false}),false)
 })

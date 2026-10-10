@@ -1,5 +1,9 @@
 import { normalizeSystemProfile } from './systemProfile.js'
 
+export function isStandaloneDemo({development, online, token, mode}) {
+  return development === true && online === false && !token && mode === 'simulation'
+}
+
 export async function persistSystemProfile(profile, { demo = false, token, saveRemote }) {
   const normalized = normalizeSystemProfile(profile)
   if (demo) {

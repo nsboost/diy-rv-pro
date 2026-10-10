@@ -15,7 +15,7 @@ import {
 } from 'recharts'
 
 import { createLocalController, fetchConfig, getAdminToken, fetchTelemetry, pushControlAction, saveConfig } from './api/telemetryClient'
-import { persistSystemProfile } from './config/saveProfile.js'
+import { persistSystemProfile, isStandaloneDemo } from './config/saveProfile.js'
 import NotificationsPanel from './components/NotificationsPanel.jsx'
 import { demoProfile, demoReadings } from './data/demoProfile.js'
 import { projectTelemetry } from './api/profileTelemetry.js'
@@ -1077,12 +1077,13 @@ export default function App() {
 
   const saveSystemProfile = async profile => {
     const token = getAdminToken()
+    const demo = isStandaloneDemo({development:import.meta.env.DEV, online:apiOnline, token, mode:snapshot.controller.mode})
     const saved = await persistSystemProfile(profile, {
-      demo: import.meta.env.DEV && !apiOnline && !token,
+      demo,
       token,
       saveRemote: saveConfig
     })
-    if (import.meta.env.DEV && !apiOnline && !token) {
+    if (demo) {
       controller.updateConfig({ features: saved.profile })
     }
     setSystemProfile(saved.profile)
