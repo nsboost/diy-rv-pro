@@ -50,3 +50,5 @@ build passed. Physical-controller behavior remains unverified.
 
 See [Delivery Status](DELIVERY_STATUS.md) for the larger installed-system release
 and [User Manual](USER_MANUAL.md) for current user workflows.
+
+Physical test procedure: [Automation reboot bench](AUTOMATION_REBOOT_BENCH.md).
