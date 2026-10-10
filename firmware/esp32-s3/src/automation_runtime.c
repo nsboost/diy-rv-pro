@@ -17,7 +17,7 @@
 
 static SemaphoreHandle_t lock;
 static automation_engine_t engine;
-static cJSON *rules, *alerts, *profile;
+static cJSON *rules, *alerts, *profile, *committed_activation;
 static bool configured;
 static bool inputs_pending;
 static bool storage_fault;
@@ -32,11 +32,15 @@ static esp_err_t save_state(const cJSON *next_rules, const cJSON *next_alerts, c
   cJSON *root = automation_engine_saved_state(&engine, next_rules, next_alerts, transition_id, active);
   if (!root) return ESP_ERR_NO_MEM;
   char *payload = cJSON_PrintUnformatted(root);
+  cJSON *next_activation = cJSON_DetachItemFromObjectCaseSensitive(root, "activeRuleIds");
   cJSON_Delete(root);
-  if (!payload)
+  if (!payload || !next_activation) {
+    cJSON_free(payload); cJSON_Delete(next_activation);
     return ESP_ERR_NO_MEM;
+  }
   if (strlen(payload) > 65536) {
     cJSON_free(payload);
+    cJSON_Delete(next_activation);
     return ESP_ERR_INVALID_SIZE;
   }
   nvs_handle_t handle;
@@ -48,6 +52,10 @@ static esp_err_t save_state(const cJSON *next_rules, const cJSON *next_alerts, c
     nvs_close(handle);
   }
   cJSON_free(payload);
+  if (result == ESP_OK) {
+    cJSON_Delete(committed_activation);
+    committed_activation = next_activation;
+  } else cJSON_Delete(next_activation);
   return result;
 }
 static bool alert(const char *message, const char *rule_id,
@@ -124,15 +132,14 @@ static void task(void *context) {
   for (;;) {
     xSemaphoreTake(lock, portMAX_DELAY);
     if (configured && !storage_fault) {
-      cJSON *before = automation_engine_export_activation(&engine, rules);
       cJSON *sources = source_values();
       automation_engine_tick(&engine, rules, sources,
                              esp_timer_get_time() / 1000, execute, NULL);
       cJSON_Delete(sources);
       cJSON *after = automation_engine_export_activation(&engine, rules);
-      if (!before || !after || (!cJSON_Compare(before, after, true) &&
+      if (!after || (!cJSON_Compare(committed_activation, after, true) &&
           save_state(rules, alerts, NULL, false) != ESP_OK)) storage_fault = true;
-      cJSON_Delete(before); cJSON_Delete(after);
+      cJSON_Delete(after);
     }
     xSemaphoreGive(lock);
     vTaskDelay(pdMS_TO_TICKS(1000));
@@ -221,6 +228,8 @@ esp_err_t automation_runtime_start(const diy_config_t *config) {
   if (loaded_activation && !automation_engine_restore_activation(&engine, rules, loaded_activation))
     storage_fault = true;
   cJSON_Delete(loaded_activation);
+  committed_activation = automation_engine_export_activation(&engine, rules);
+  if (!committed_activation) return ESP_ERR_NO_MEM;
   return xTaskCreate(task, "automation", 6144, NULL, 3, NULL) == pdPASS
              ? ESP_OK
              : ESP_ERR_NO_MEM;

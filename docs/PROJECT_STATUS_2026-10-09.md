@@ -406,3 +406,8 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 ### Allocation-fault regression for persisted-state assembly (October 10)
 - Runtime NVS writing uses the portable saved-state assembly helper. Host regression injects failure at every allocation in a successful record assembly, verifies no partial record is returned, counts outstanding allocations to confirm failure cleanup, and checks engine activation remains unchanged. Unknown transition IDs are rejected by full-state validation.
 - All 28 firmware host tests and ESP32-S3 build passed: static RAM 77,872 bytes; flash 995,749 bytes. This closes the assembly allocation-test gap, not physical NVS commit/power-loss or broader runtime heap-exhaustion coverage. No hardware flashed.
+
+### Avoid redundant activation commits (October 10)
+- Runtime tracks the activation snapshot from the last successful NVS commit. The evaluator compares its current state to that committed snapshot instead of its pre-tick state, skipping an unchanged activation already saved with an alert. Failed commits leave the committed snapshot unchanged; healthy rearming still requires persistence.
+- The snapshot is transferred from the validated record without another allocation and initialized from restored engine state at startup. Actual NVS write counts, interrupted commits and flash endurance remain unverified on hardware.
+- All 28 firmware host tests and ESP32-S3 build passed: static RAM 77,872 bytes; flash 995,821 bytes. The commit-cache behavior is implementation-inspected; host tests cover record assembly/evaluator, not NVS calls. No hardware flashed.
