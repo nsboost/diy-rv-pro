@@ -1,4 +1,5 @@
 import { normalizeSystemProfile } from './systemProfile.js'
+import { validateProfile } from './validateProfile.js'
 
 export function isStandaloneDemo({development, online, token, mode}) {
   return development === true && online === false && !token && mode === 'simulation'
@@ -16,6 +17,7 @@ export async function persistSystemProfile(profile, { demo = false, token, saveR
   if (!saved?.features || saved.features.schemaVersion !== normalized.schemaVersion) {
     throw new Error('Controller did not return a valid saved configuration; reload to verify')
   }
+  if (validateProfile(saved.features).length) throw new Error('Controller returned an invalid saved inventory. Reload to verify the controller state before making further changes.')
   const pendingInputs = []
   if (saved.temperatureInputsRequireRestart === true) pendingInputs.push('temperature buses')
   if (saved.securityInputsRequireRestart === true) pendingInputs.push('security inputs')

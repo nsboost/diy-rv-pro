@@ -64,3 +64,11 @@ test('configuration feedback includes every input group requiring restart', asyn
     assert.equal(result.message.includes('discover temperature'),temperature)
   }
 })
+
+test('malformed controller-confirmed inventory cannot replace the submitted configuration', async () => {
+  const before = structuredClone(defaultSystemProfile)
+  for (const features of [{...defaultSystemProfile,hvacZones:'invalid'}, {...defaultSystemProfile,temperatureZones:[{id:'bad.id',label:'Bad',enabled:false}]}]) {
+    await assert.rejects(persistSystemProfile(defaultSystemProfile,{token:'test',saveRemote:async()=>({features})}), /invalid saved inventory/)
+    assert.deepEqual(defaultSystemProfile,before)
+  }
+})
