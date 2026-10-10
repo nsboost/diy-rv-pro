@@ -4,6 +4,7 @@ export default function NotificationsPanel({ telemetry, onAcknowledge, onSetting
   const [permissionMessage, setPermissionMessage] = useState('')
   const [requestingPermission, setRequestingPermission] = useState(false)
   const [acknowledgementError, setAcknowledgementError] = useState('')
+  const [acknowledgingId, setAcknowledgingId] = useState(null)
   const [settingsError, setSettingsError] = useState('')
   const saveSettings = async changes => {
     setSettingsError('')
@@ -45,11 +46,14 @@ export default function NotificationsPanel({ telemetry, onAcknowledge, onSetting
     {(telemetry.notifications || []).length === 0 && <p>No notifications yet.</p>}
     <div className="notification-list">{(telemetry.notifications || []).map(item => <article className={`notification-item ${item.read ? 'read' : ''}`} key={item.id}>
       <div><strong>{item.severity === 'warning' ? 'Attention' : 'Information'}</strong><p>{item.message}</p><time>{item.createdAt ? new Date(item.createdAt).toLocaleString() : `Controller uptime ${Math.floor((item.uptimeMs || 0) / 1000)} seconds`}</time></div>
-      <button className="secondary-action" type="button" disabled={item.read} onClick={async () => {
+      <button className="secondary-action" type="button" disabled={item.read || acknowledgingId !== null} onClick={async () => {
+        if (acknowledgingId !== null) return
+        setAcknowledgingId(item.id)
         setAcknowledgementError('')
         try { await onAcknowledge(item.id) }
         catch (error) { setAcknowledgementError(error.message || 'Acknowledgement failed. Try again.') }
-      }}>{item.read ? 'Acknowledged' : 'Acknowledge'}</button>
+        finally { setAcknowledgingId(null) }
+      }}>{item.read ? 'Acknowledged' : acknowledgingId === item.id ? 'Acknowledging...' : 'Acknowledge'}</button>
     </article>)}</div>
   </section>
 }

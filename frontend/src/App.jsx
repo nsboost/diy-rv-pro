@@ -1132,7 +1132,7 @@ export default function App() {
   )
 
   const renderPage = () => {
-    if (activeSection === 'notifications') return <NotificationsPanel telemetry={{...snapshot, notificationSettings: browserSettings}} onAcknowledge={id => { if (snapshot.controller.mode === 'device') dispatch({type:'notification.acknowledge',id}).catch(() => {}); else { controller.acknowledge(id); setTelemetry(current => ({ ...current, notifications: controller.getTelemetry().notifications, controller: {...current.controller, alerts: controller.getTelemetry().controller.alerts} })) } }} onSettings={settings => { const next = saveNotificationSettings(window.localStorage, browserSettings, settings); controller.setNotificationSettings(next, {persistSettings:false}); setBrowserSettings(next); setTelemetry(current => ({ ...current, notificationSettings: next })) }} />
+    if (activeSection === 'notifications') return <NotificationsPanel telemetry={{...snapshot, notificationSettings: browserSettings}} onAcknowledge={id => { if (snapshot.controller.mode === 'device') return dispatch({type:'notification.acknowledge',id}); else { controller.acknowledge(id); setTelemetry(current => ({ ...current, notifications: controller.getTelemetry().notifications, controller: {...current.controller, alerts: controller.getTelemetry().controller.alerts} })) } }} onSettings={settings => { const next = saveNotificationSettings(window.localStorage, browserSettings, settings); controller.setNotificationSettings(next, {persistSettings:false}); setBrowserSettings(next); setTelemetry(current => ({ ...current, notificationSettings: next })) }} />
     if (activeSection === 'setup') {
       return (
         <section className="setup-page" id="section-setup">
