@@ -405,3 +405,11 @@ test('contact comparison choices omit unsupported numeric operators',()=>{
   assert.ok(conditionOperators('temperature.probe.tempF').includes('between'))
   assert.ok(conditionOperators('time.local').includes('outside'))
 })
+
+test('change rules do not count recovery from unavailable readings as a state change',()=>{
+  const condition = {source:'security.door.active',operator:'changes'}
+  for (const previous of [undefined,null,NaN,Infinity]) assert.equal(compareCondition(condition,true,previous),false)
+  assert.equal(compareCondition(condition,true,false),true)
+  assert.equal(compareCondition(condition,false,true),true)
+  assert.equal(compareCondition(condition,false,false),false)
+})

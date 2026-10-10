@@ -52,7 +52,7 @@ export function validateCondition(condition) {
 
 export function compareCondition(condition, value, previous) {
   if (value === undefined || value === null || (typeof value === 'number' && !Number.isFinite(value))) return false
-  if (condition.operator === 'changes') return previous !== undefined && value !== previous
+  if (condition.operator === 'changes') return previous !== undefined && previous !== null && (typeof previous !== 'number' || Number.isFinite(previous)) && value !== previous
   if (['between', 'outside'].includes(condition.operator)) {
     if (typeof value !== 'number') return false
     let within
