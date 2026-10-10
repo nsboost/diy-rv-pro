@@ -384,3 +384,11 @@ test('HVAC temperature aliases require a healthy fresh selected sensor',()=>{
   zone.sensorSampledAt = undefined
   assert.equal(readAutomationSource(telemetry,'hvac.living.tempF',2000),undefined)
 })
+
+test('temperature source reads reject nonnumeric samples for direct and HVAC rules',()=>{
+  for (const tempF of [false,true,'72',null,undefined,NaN,Infinity]) {
+    const telemetry = {temperatures:[{id:'probe',status:'ok',sampledAt:1000,tempF}],hvacZones:[{id:'zone',sensorStatus:'ok',sensorSampledAt:1000,tempF}]}
+    assert.equal(readAutomationSource(telemetry,'temperature.probe.tempF',2000),undefined)
+    assert.equal(readAutomationSource(telemetry,'hvac.zone.tempF',2000),undefined)
+  }
+})

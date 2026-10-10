@@ -78,11 +78,11 @@ export function readAutomationSource(telemetry, source, now) {
   }
   if (parts[0] === 'temperature') {
     const reading = telemetry.temperatures?.find(sensor => sensor.id === parts[1])
-    return reading?.status === 'ok' && Number.isFinite(reading.sampledAt) && now >= reading.sampledAt && now - reading.sampledAt <= 30000 ? reading.tempF : undefined
+    return reading?.status === 'ok' && Number.isFinite(reading.tempF) && Number.isFinite(reading.sampledAt) && now >= reading.sampledAt && now - reading.sampledAt <= 30000 ? reading.tempF : undefined
   }
   if (parts[0] === 'hvac') {
     const zone = telemetry.hvacZones?.find(zone => zone.id === parts[1])
-    return parts[2] === 'tempF' && zone?.sensorStatus === 'ok' && Number.isFinite(zone.sensorSampledAt) && now >= zone.sensorSampledAt && now - zone.sensorSampledAt <= 30000 ? zone.tempF : undefined
+    return parts[2] === 'tempF' && zone?.sensorStatus === 'ok' && Number.isFinite(zone.tempF) && Number.isFinite(zone.sensorSampledAt) && now >= zone.sensorSampledAt && now - zone.sensorSampledAt <= 30000 ? zone.tempF : undefined
   }
   if (parts[0] === 'tank') return telemetry.tanks?.find(tank => tank.id === parts[1])?.[parts[2]]
   if (parts[0] === 'device' && parts.at(-1) === 'state') return telemetry.outputStates?.[parts.slice(0,-1).join('.')]
