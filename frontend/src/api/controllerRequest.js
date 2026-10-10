@@ -7,9 +7,32 @@ export async function requestControllerBackup(token) {
   if (!token) throw new Error('Connect with the controller admin token before downloading its saved automation data.')
   return requestController('/api/automation/backup', {headers:{Authorization:`Bearer ${token}`}}, 10000, async response => {
     if (response.headers.get('Content-Type')?.split(';')[0].trim() !== 'application/octet-stream') throw new Error('Controller returned an invalid backup response.')
-    const bytes = await response.arrayBuffer()
-    if (!bytes.byteLength || bytes.byteLength > 65537) throw new Error('Controller backup size is invalid.')
-    return bytes
+    const declaredLength = response.headers.get('Content-Length')
+    if (declaredLength !== null && (!/^\d+$/.test(declaredLength) || Number(declaredLength) < 1 || Number(declaredLength) > 65537)) {
+      await response.body?.cancel()
+      throw new Error('Controller backup size is invalid.')
+    }
+    if (!response.body) throw new Error('Controller backup size is invalid.')
+    const reader = response.body.getReader()
+    const chunks = []
+    let length = 0
+    try {
+      for (;;) {
+        const {done, value} = await reader.read()
+        if (done) break
+        length += value.byteLength
+        if (length > 65537) {
+          await reader.cancel()
+          throw new Error('Controller backup size is invalid.')
+        }
+        chunks.push(value)
+      }
+    } finally { reader.releaseLock() }
+    if (!length || declaredLength !== null && Number(declaredLength) !== length) throw new Error('Controller backup size is invalid.')
+    const bytes = new Uint8Array(length)
+    let offset = 0
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength }
+    return bytes.buffer
   })
 }
 

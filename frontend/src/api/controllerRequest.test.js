@@ -32,6 +32,33 @@ test('automation backup rejects missing, oversized or nonbinary payloads', async
   } finally { globalThis.fetch = original }
 })
 
+test('automation backup stops oversized streaming responses without reading the rest', async () => {
+  const original = globalThis.fetch
+  let cancelled = false
+  let chunksRead = 0
+  globalThis.fetch = async () => new Response(new ReadableStream({
+    pull(controller) { chunksRead++; controller.enqueue(new Uint8Array(40000)) },
+    cancel() { cancelled = true },
+  }), {headers:{'Content-Type':'application/octet-stream'}})
+  try {
+    await assert.rejects(requestControllerBackup('test-token'), /size is invalid/)
+    assert.equal(cancelled, true)
+    assert.ok(chunksRead <= 3)
+  } finally { globalThis.fetch = original }
+})
+
+test('automation backup rejects invalid declared sizes and truncated content', async () => {
+  const original = globalThis.fetch
+  try {
+    for (const declared of ['0', '65538', '-1', 'invalid', '3']) {
+      globalThis.fetch = async () => new Response(new Uint8Array([1,2]), {headers:{'Content-Type':'application/octet-stream','Content-Length':declared}})
+      await assert.rejects(requestControllerBackup('test-token'), /size is invalid/)
+    }
+    globalThis.fetch = async () => new Response(new Uint8Array([1,2]), {headers:{'Content-Type':'application/octet-stream','Content-Length':'2'}})
+    assert.deepEqual(new Uint8Array(await requestControllerBackup('test-token')), new Uint8Array([1,2]))
+  } finally { globalThis.fetch = original }
+})
+
 test('controller timeout includes stalled body reading and never retries a mutation', async () => {
   const original = globalThis.fetch
   let calls = 0
