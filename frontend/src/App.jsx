@@ -1281,6 +1281,18 @@ export default function App() {
         <TopBar telemetry={telemetry} onSelect={selectSection} onNightMode={() => setNightMode(current => !current)} />
         {controlError && <p role="alert" className="configuration-issues">{controlError}</p>}
         {telemetry.storageError && <p role="alert" className="configuration-issues">{telemetry.storageError}</p>}
+        {snapshot.controller.mode === 'simulation' && (snapshot.recoveryRequired || snapshot.recoveryBackupKey) && <button type="button" className="secondary-action" onClick={() => {
+          try {
+            const payload = window.localStorage.getItem(snapshot.recoveryBackupKey || 'diy-rv-demo-v2')
+            if (payload === null) throw new Error('Preserved demo data could not be read.')
+            const url = URL.createObjectURL(new Blob([payload], {type:'application/json'}))
+            const link = document.createElement('a')
+            link.href = url
+            link.download = 'diy-rv-demo-recovery.json'
+            link.click()
+            setTimeout(() => URL.revokeObjectURL(url), 1000)
+          } catch (error) { setControlError(error.message || 'Recovery download failed.') }
+        }}>Download preserved demo data</button>}
         {snapshot.controller.equipmentMode === 'prototype-simulation' && <div className="demo-banner">Controller prototype · equipment readings and manual controls are simulated · addressed temperature alerts run on the controller</div>}
         {snapshot.controller.mode === 'simulation' && <div className="demo-banner">Demo simulation · equipment actions do not operate hardware · configuration and rules saved in this browser</div>}
         {renderPage()}

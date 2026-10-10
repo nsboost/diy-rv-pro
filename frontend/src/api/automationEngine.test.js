@@ -121,6 +121,30 @@ test('failed configuration and rule saves preserve the committed state and activ
   assert.equal(restored.getTelemetry().automationRules.find(rule => rule.id === alertRule.id).enabled,false)
 })
 
+test('corrupt saved demo data survives ticks and recovery requires a successful backup', () => {
+  for (const payload of ['{broken', JSON.stringify({version:99}), JSON.stringify({version:2,config:{features:demoProfile},rules:[],notifications:[null]})]) {
+    const values = new Map([['diy-rv-demo-v2',payload]])
+    let failBackup = true
+    const storage = {getItem:key => values.get(key) ?? null,setItem:(key,value) => {
+      if (failBackup && key.startsWith('diy-rv-demo-recovery-')) throw new Error('Quota exceeded')
+      values.set(key,value)
+    }}
+    const controller = createLocalController(cloneTelemetry(), {storage,initialProfile:demoProfile})
+    assert.match(controller.getTelemetry().storageError,/Saved data is preserved/)
+    assert.deepEqual(controller.tick(1000).automationRules,[])
+    controller.setNotificationSettings({desktop:false})
+    assert.equal(values.get('diy-rv-demo-v2'),payload)
+    assert.throws(() => controller.updateConfig(controller.getConfig()), /could not be saved/)
+    assert.equal(values.get('diy-rv-demo-v2'),payload)
+    failBackup = false
+    controller.updateConfig(controller.getConfig())
+    const key = controller.getTelemetry().recoveryBackupKey
+    assert.equal(values.get(key),payload)
+    assert.equal(JSON.parse(values.get('diy-rv-demo-v2')).version,2)
+    assert.deepEqual(createLocalController(cloneTelemetry(), {storage}).getTelemetry().automationRules,[])
+  }
+})
+
 test('blocking rule prevents generator action irrespective of rule ordering', () => {
   const controller = createLocalController(cloneTelemetry(), {initialProfile: demoProfile})
   const trigger = {source: 'battery.voltage', operator: '>', value: '0', holdFor: '0 sec'}

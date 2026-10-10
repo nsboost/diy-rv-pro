@@ -49,29 +49,49 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
   const blocked = {}
   let notifications = []
   let notificationSettings = { inApp: true, desktop: false }
+  let recoveryRequired = false
+  let recoveryPayload = null
+  let recoveryBackupKey = ''
   if (storage) {
     try {
-      const saved = JSON.parse(storage.getItem('diy-rv-demo-v2') || 'null')
+      recoveryPayload = storage.getItem('diy-rv-demo-v2')
+      const saved = JSON.parse(recoveryPayload || 'null')
+      if (saved !== null && saved?.version !== 2) throw new Error('Unsupported saved demo version')
       if (saved?.version === 2) {
-        const issues = validateProfile(saved.config.features)
+        const issues = validateProfile(saved.config?.features)
         if (issues.length) throw new Error('Saved demo configuration needs correction')
+        if (!Array.isArray(saved.rules) || saved.rules.length > 64 || !Array.isArray(saved.notifications) || saved.notifications.length > 100) throw new Error('Saved demo lists are invalid')
+        const loadedRules = saved.rules.map(normalizeAutomationRule)
+        if (new Set(loadedRules.map(rule => rule.id)).size !== loadedRules.length) throw new Error('Saved demo rule identities are duplicated')
+        if (saved.notifications.some(item => !item || typeof item.id !== 'string' || !item.id || typeof item.message !== 'string' || typeof item.read !== 'boolean')) throw new Error('Saved notifications are invalid')
         config = { ...defaultConfig, features: normalizeSystemProfile(saved.config.features) }
-        telemetry.automationRules = (saved.rules || []).slice(0, 64).map(normalizeAutomationRule)
-        notifications = (saved.notifications || []).slice(0, 100)
+        telemetry.automationRules = loadedRules
+        notifications = saved.notifications
         notificationSettings = normalizeNotificationSettings(saved.notificationSettings)
         for (const rule of telemetry.automationRules) {
           const savedState = saved.runtime?.[rule.id]
           if (savedState && !rule.action.command.startsWith('block')) runtime[rule.id] = {active: savedState.active === true, since: null}
         }
       }
-    } catch (error) { storageError = error.message }
+    } catch (error) {
+      recoveryRequired = true
+      telemetry.automationRules = []
+      storageError = `${error.message}. Saved data is preserved; save a corrected configuration to recover with a backup.`
+    }
   }
   let persistedPayload = ''
-  const persist = () => {
+  const persist = (recover = false) => {
     if (!storage) return true
+    if (recoveryRequired && !recover) return false
     try {
+      if (recoveryRequired) {
+        if (recoveryPayload === null) throw new Error('Saved data could not be read')
+        if (!recoveryBackupKey) recoveryBackupKey = `diy-rv-demo-recovery-${crypto.randomUUID()}`
+        storage.setItem(recoveryBackupKey, recoveryPayload)
+      }
       const payload = JSON.stringify({ version: 2, config, rules: telemetry.automationRules, notifications, notificationSettings, runtime })
       if (payload !== persistedPayload) storage.setItem('diy-rv-demo-v2', payload)
+      recoveryRequired = false
       persistedPayload = payload; storageError = ''; return true
     }
     catch { storageError = 'Browser storage is unavailable or full. Changes cannot be preserved.'; return false }
@@ -93,6 +113,8 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
     telemetry.notifications = structuredClone(notifications)
     telemetry.notificationSettings = structuredClone(notificationSettings)
     telemetry.storageError = storageError
+    telemetry.recoveryBackupKey = recoveryBackupKey
+    telemetry.recoveryRequired = recoveryRequired
     telemetry.controller.alerts = notifications.filter(item => !item.read).length
     const snapshot = structuredClone(telemetry)
     listeners.forEach(listener => listener(snapshot))
@@ -133,7 +155,7 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
       const hasPower = profile => installed(profile, 'batteries') || installed(profile, 'solarChargeControllers') || hasLoads(profile)
       if (hasPower(features) && !hasPower(config.features)) telemetry.powerHistory = structuredClone(demoBaseline.powerHistory)
       config = { ...config, ...nextConfig, features }
-      if (!persist()) {
+      if (!persist(true)) {
         config = previousConfig
         telemetry = previousTelemetry
         emit()
