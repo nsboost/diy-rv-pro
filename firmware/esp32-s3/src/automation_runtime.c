@@ -162,20 +162,27 @@ esp_err_t automation_runtime_start(const diy_config_t *config) {
     if (nvs_get_blob(handle, "state", NULL, &size) == ESP_OK && size > 0 &&
         size <= 65537) {
       char *payload = malloc(size);
-      if (payload && nvs_get_blob(handle, "state", payload, &size) == ESP_OK) {
-        payload[size - 1] = '\0';
-        cJSON *saved = cJSON_Parse(payload),
+      if (payload && nvs_get_blob(handle, "state", payload, &size) == ESP_OK &&
+          size > 0 && payload[size - 1] == '\0') {
+        cJSON *saved = cJSON_ParseWithLengthOpts(payload, size, NULL, true),
               *saved_rules = cJSON_GetObjectItemCaseSensitive(saved, "rules"),
               *saved_alerts =
                   cJSON_GetObjectItemCaseSensitive(saved, "notifications");
         char error[96];
-        if (automation_validate_rules(saved_rules, error, sizeof(error)) &&
-            cJSON_IsArray(saved_alerts) &&
-            cJSON_GetArraySize(saved_alerts) <= 64) {
-          cJSON_Delete(rules);
-          cJSON_Delete(alerts);
-          rules = cJSON_Duplicate(saved_rules, true);
-          alerts = cJSON_Duplicate(saved_alerts, true);
+        if (automation_validate_saved_state(saved, error, sizeof(error))) {
+          cJSON *loaded_rules = cJSON_Duplicate(saved_rules, true);
+          cJSON *loaded_alerts = cJSON_Duplicate(saved_alerts, true);
+          if (loaded_rules && loaded_alerts) {
+            cJSON_Delete(rules);
+            cJSON_Delete(alerts);
+            rules = loaded_rules;
+            alerts = loaded_alerts;
+          } else {
+            cJSON_Delete(loaded_rules);
+            cJSON_Delete(loaded_alerts);
+            ESP_LOGW("automation",
+                     "Insufficient memory to restore automation state");
+          }
         } else
           ESP_LOGW("automation",
                    "Stored automation state is invalid; using empty inventory");

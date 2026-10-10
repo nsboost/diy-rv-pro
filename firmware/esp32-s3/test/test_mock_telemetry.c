@@ -296,6 +296,27 @@ static void test_automation_zone_sources_follow_addressed_sensor(void) {
     TEST_ASSERT_EQUAL(0,cJSON_GetArraySize(sources));
     cJSON_Delete(sources); cJSON_Delete(profile); cJSON_Delete(devices);
 }
+static void test_saved_notifications_reject_corrupt_payloads(void) {
+    char error[96];
+    cJSON *state=cJSON_Parse("{\"version\":1,\"rules\":[],\"notifications\":[{\"id\":\"alert-1\",\"message\":\"Bedroom warm\",\"ruleId\":\"rule-1\",\"severity\":\"info\",\"read\":false,\"uptimeMs\":1000}]}");
+    TEST_ASSERT_TRUE(automation_validate_saved_state(state,error,sizeof(error)));
+    cJSON *item=cJSON_GetArrayItem(cJSON_GetObjectItemCaseSensitive(state,"notifications"),0);
+    cJSON_ReplaceItemInObjectCaseSensitive(item,"message",cJSON_CreateObject());
+    TEST_ASSERT_FALSE(automation_validate_saved_state(state,error,sizeof(error)));
+    cJSON_ReplaceItemInObjectCaseSensitive(item,"message",cJSON_CreateString("Bedroom warm"));
+    cJSON_ReplaceItemInObjectCaseSensitive(item,"read",cJSON_CreateString("false"));
+    TEST_ASSERT_FALSE(automation_validate_saved_state(state,error,sizeof(error)));
+    cJSON_ReplaceItemInObjectCaseSensitive(item,"read",cJSON_CreateBool(false));
+    cJSON_ReplaceItemInObjectCaseSensitive(item,"uptimeMs",cJSON_CreateNumber(-1));
+    TEST_ASSERT_FALSE(automation_validate_saved_state(state,error,sizeof(error)));
+    cJSON_ReplaceItemInObjectCaseSensitive(item,"uptimeMs",cJSON_CreateNumber(1000));
+    cJSON_ReplaceItemInObjectCaseSensitive(state,"version",cJSON_CreateNumber(2));
+    TEST_ASSERT_FALSE(automation_validate_saved_state(state,error,sizeof(error)));
+    cJSON_ReplaceItemInObjectCaseSensitive(state,"version",cJSON_CreateNumber(1));
+    cJSON_AddItemToArray(cJSON_GetObjectItemCaseSensitive(state,"notifications"),cJSON_Duplicate(item,true));
+    TEST_ASSERT_FALSE(automation_validate_saved_state(state,error,sizeof(error)));
+    cJSON_Delete(state);
+}
 static void test_automation_clock_comparisons(void) {
     char error[96]; cJSON *rules=temperature_rules();
     cJSON *rule=cJSON_GetArrayItem(rules,0), *trigger=cJSON_GetObjectItemCaseSensitive(rule,"trigger");
@@ -340,6 +361,7 @@ void app_main(void)
     RUN_TEST(test_automation_rejects_invalid_rules);
     RUN_TEST(test_automation_clock_comparisons);
     RUN_TEST(test_automation_zone_sources_follow_addressed_sensor);
+    RUN_TEST(test_saved_notifications_reject_corrupt_payloads);
     RUN_TEST(test_addressed_temperature_inventory);
     RUN_TEST(test_contact_filter_requires_stable_samples);
     RUN_TEST(test_duplicate_and_missing_device_ids_are_rejected);

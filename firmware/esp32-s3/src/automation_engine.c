@@ -168,6 +168,36 @@ bool automation_validate_rules(const cJSON *rules, char *error,
              "Automation configuration exceeds storage limit");
   return valid;
 }
+bool automation_validate_saved_state(const cJSON *state, char *error,
+                                     size_t error_len) {
+  const cJSON *version = get(state, "version"),
+              *alerts = get(state, "notifications");
+  if (!cJSON_IsObject(state) || !cJSON_IsNumber(version) ||
+      version->valuedouble != 1 || !cJSON_IsArray(alerts) ||
+      cJSON_GetArraySize(alerts) > 64)
+    goto invalid;
+  if (!automation_validate_rules(get(state, "rules"), error, error_len))
+    return false;
+  const cJSON *item;
+  cJSON_ArrayForEach(item, alerts) {
+    const cJSON *uptime = get(item, "uptimeMs");
+    if (!cJSON_IsObject(item) || !bounded(item, "id", 1, 32) ||
+        !bounded(item, "message", 1, 256) || !bounded(item, "ruleId", 0, 32) ||
+        !cJSON_IsBool(get(item, "read")) || !cJSON_IsNumber(uptime) ||
+        !isfinite(uptime->valuedouble) || uptime->valuedouble < 0 ||
+        (strcmp(str(item, "severity"), "info") &&
+         strcmp(str(item, "severity"), "warning")))
+      goto invalid;
+    for (const cJSON *other = item->next; other; other = other->next)
+      if (!strcmp(str(item, "id"), str(other, "id")))
+        goto invalid;
+  }
+  return true;
+invalid:
+  if (error && error_len)
+    snprintf(error, error_len, "Stored automation state is invalid");
+  return false;
+}
 void automation_engine_reset(automation_engine_t *engine) {
   for (size_t i = 0; i < DIY_AUTOMATION_MAX_RULES; i++) {
     cJSON_Delete(engine->rules[i].previous);
