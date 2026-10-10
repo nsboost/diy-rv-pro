@@ -1,3 +1,4 @@
+import { importProfileJson } from '../config/importProfile.js'
 import { useEffect, useMemo, useState } from 'react'
 import { boardPins, sensorOptions } from '../config/sensorInventory.js'
 import { validateProfile, sectionLimits } from '../config/validateProfile.js'
@@ -437,16 +438,12 @@ export default function SetupWizard({ initialProfile, onSave, onDiscover }) {
           const url = URL.createObjectURL(new Blob([JSON.stringify(profile, null, 2)], {type: 'application/json'}))
           const link = document.createElement('a'); link.href = url; link.download = 'diy-rv-configuration.json'; link.click(); URL.revokeObjectURL(url)
         }}>Export Configuration</button>
-        <label className="secondary-action">Import Configuration<input type="file" accept="application/json,.json" onChange={async event => {
+        <label className="secondary-action">Import Configuration<input type="file" accept="application/json,.json" disabled={saving} onChange={async event => {
           const file = event.target.files?.[0]
           if (!file) return
           try {
             if (file.size > 24576) throw new Error('Configuration file exceeds the controller limit')
-            const raw = JSON.parse(await file.text())
-            if (raw.schemaVersion !== 1) throw new Error('Unsupported configuration version')
-            const imported = normalizeSystemProfile(raw)
-            const issues = validateProfile(imported)
-            if (issues.length) throw new Error(issues.join('; '))
+            const imported = importProfileJson(await file.text())
             if (saving) return; setDirty(true); setProfile(imported); setSelectedIndexes({}); setStatus('Imported for review. Save to apply.')
           } catch (error) { setStatus(error.message) }
           event.target.value = ''
