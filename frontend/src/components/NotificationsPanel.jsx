@@ -1,3 +1,4 @@
+import { notificationTimeLabel } from '../api/notificationTime.js'
 import { useState } from 'react'
 
 export default function NotificationsPanel({ telemetry, onAcknowledge, onSettings }) {
@@ -45,7 +46,7 @@ export default function NotificationsPanel({ telemetry, onAcknowledge, onSetting
     {acknowledgementError && <p role="alert">{acknowledgementError}</p>}
     {(telemetry.notifications || []).length === 0 && <p>No notifications yet.</p>}
     <div className="notification-list">{(telemetry.notifications || []).map(item => <article className={`notification-item ${item.read ? 'read' : ''}`} key={item.id}>
-      <div><strong>{item.severity === 'warning' ? 'Attention' : 'Information'}</strong><p>{item.message}</p><time>{item.createdAt ? new Date(item.createdAt).toLocaleString() : `Controller uptime ${Math.floor((item.uptimeMs || 0) / 1000)} seconds`}</time></div>
+      <div><strong>{item.severity === 'warning' ? 'Attention' : 'Information'}</strong><p>{item.message}</p><time>{notificationTimeLabel(item)}</time></div>
       <button className="secondary-action" type="button" disabled={item.read || acknowledgingId !== null} onClick={async () => {
         if (acknowledgingId !== null) return
         setAcknowledgingId(item.id)
