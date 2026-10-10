@@ -319,3 +319,7 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 - Kept the Setup Wizard mounted in a hidden container when visiting other pages, preserving unsaved inventory, selected equipment, and discovery results during navigation.
 - Browser verification: edited RV name without saving, visited Automations, returned to Setup, and confirmed the draft remained. Discard restored Demo RV; no test inventory was saved. Browser error log was empty.
 - Validation: 79 frontend tests passed; production build passed. Existing bundle-size warning remains. Drafts are session-only and must be saved before closing or reloading the browser.
+
+### Controller credential replacement (October 10)
+- Sign-in writes the new credential before clearing its previous persistence scope. It snapshots both stores and restores them if writing or clearing fails; unavailable storage prevents changes. A failed rollback produces explicit cleanup guidance rather than claiming sign-in succeeded.
+- Validation: 84 frontend tests passed, including failed writes, failed cleanup, unavailable storage, persistence-scope selection, and failed rollback. Production build passed before the additional test-only rollback case. Actual controller authentication remains hardware-dependent and was not exercised by this change.

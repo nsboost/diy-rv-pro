@@ -1,4 +1,4 @@
-import { clearAdminToken } from '../api/authStorage.js'
+import { clearAdminToken, storeAdminToken } from '../api/authStorage.js'
 import { requestControllerJson } from '../api/controllerRequest.js'
 import { useEffect, useState } from 'react'
 import { fetchConfig, getAdminToken, saveConfig } from '../api/telemetryClient.js'
@@ -24,10 +24,7 @@ export default function ControllerSettings({ telemetry, apiOnline, onProfile, on
     }
   }
   useEffect(() => {refresh().catch(() => {})}, [])
-  const storeToken = value => {
-    window.localStorage.removeItem('diy-rv-admin-token'); window.sessionStorage.removeItem('diy-rv-admin-token')
-    ;(remember ? window.localStorage : window.sessionStorage).setItem('diy-rv-admin-token',value)
-  }
+  const storeToken = value => storeAdminToken(value, remember, () => window.sessionStorage, () => window.localStorage)
   const update = (key,value) => setNetwork(current => ({...current,[key]:value}))
   const run = async work => {setBusy(true); setMessage('');try {await work()} catch(error) {setMessage(error.message)} finally {setBusy(false)}}
   return <section className="panel utility-panel" id="section-settings">
