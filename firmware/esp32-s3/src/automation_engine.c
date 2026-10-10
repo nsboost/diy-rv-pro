@@ -126,8 +126,13 @@ bool automation_validate_rule(const cJSON *rule, char *error,
                               size_t error_len) {
   double hold;
   const cJSON *reverse = get(rule, "reverse");
+  const char *identity = str(rule, "id");
+  const bool valid_identity = identity[0] != '\0' &&
+      strchr("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", identity[0]) != NULL &&
+      strspn(identity, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-") == strlen(identity) &&
+      strcmp(identity, "constructor") != 0 && strcmp(identity, "prototype") != 0;
   bool valid =
-      cJSON_IsObject(rule) && bounded(rule, "id", 1, 32) &&
+      cJSON_IsObject(rule) && valid_identity && bounded(rule, "id", 1, 32) &&
       bounded(rule, "name", 3, 96) && cJSON_IsBool(get(rule, "enabled")) &&
       condition_valid(get(rule, "trigger")) &&
       duration(str(get(rule, "trigger"), "holdFor"), &hold) &&

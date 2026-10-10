@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { evaluateRules, durationMs, compareCondition, validateCondition } from './automationEngine.js'
-import { createLocalController } from './telemetryClient.js'
+import { createLocalController, normalizeAutomationRule } from './telemetryClient.js'
 import { demoProfile, demoReadings } from '../data/demoProfile.js'
 import { cloneTelemetry } from '../data/mockTelemetry.js'
 
@@ -9,6 +9,18 @@ const alertRule = { id: 'bedroom-alert', name: 'Bedroom too warm', enabled: true
   trigger: { source: 'temperature.demo-temp-2.tempF', operator: '>', value: '75', holdFor: '5 sec' },
   action: { type: 'alert', target: 'notification', command: 'sendAlert', value: 'Bedroom hot' },
   reverse: { enabled: true, source: 'temperature.demo-temp-2.tempF', operator: '<', value: '72', target: 'notification', command: 'sendAlert', restoreValue: 'Bedroom recovered' } }
+
+test('rule validation rejects coerced flags, unsafe identities and oversized device text', () => {
+  for (const enabled of ['false',0,null]) {
+    assert.throws(() => normalizeAutomationRule({...alertRule,enabled}), /true or false/)
+    assert.throws(() => normalizeAutomationRule({...alertRule,reverse:{...alertRule.reverse,enabled}}), /true or false/)
+  }
+  for (const id of ['__proto__','constructor','prototype','zone.1','a'.repeat(33)]) assert.throws(() => normalizeAutomationRule({...alertRule,id}), /identity/)
+  assert.throws(() => normalizeAutomationRule({...alertRule,name:'é'.repeat(49)}), /96 UTF-8/)
+  assert.throws(() => normalizeAutomationRule({...alertRule,action:{...alertRule.action,value:'é'.repeat(129)}}), /256 UTF-8/)
+  assert.throws(() => normalizeAutomationRule({...alertRule,action:{...alertRule.action,target:'generator'}}), /target notifications/)
+  assert.equal(normalizeAutomationRule({...alertRule,name:'é'.repeat(48)}).name.length,48)
+})
 
 test('clock comparisons use HH:MM consistently and reject invalid times', () => {
   for (const [operator, minute, expected] of [['=', 390, true], ['!=', 391, true], ['>', 391, true], ['<', 389, true], ['>=', 390, true], ['<=', 390, true]]) {

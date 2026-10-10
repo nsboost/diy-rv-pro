@@ -89,12 +89,12 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
   runtime. Temperature-based alerts run in a background task. Physical equipment
   drivers, other source values, time synchronization and hardware bench checks
   remain incomplete; equipment prototype simulation is labeled explicitly.
-- The frontend suite currently contains 50 passing tests, including malformed
+- The frontend suite currently contains 51 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
   contain 20 passing tests including assigned pump outputs, boolean flag validation, rule identity retention, disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
   failed-execution retries. ESP32-S3 integration build passed: 77,872 bytes static
-  RAM and 992,489 bytes application flash. Runtime headroom and hardware operation
+  RAM and 992,637 bytes application flash. Runtime headroom and hardware operation
   still need bench verification.
 
 The active goal remains open until the remaining runtime/menu gaps and GitHub
@@ -212,3 +212,5 @@ The demo control API now executes notification.acknowledge through the same pers
 Corrupt saved-demo recovery no longer overwrites the original during automatic ticks or preference changes. Invalid JSON, unsupported versions, malformed rule/notification lists and duplicate rule IDs suspend loaded rules and report recovery. Saving a corrected configuration first copies the exact original into a unique recovery backup; backup failure prevents replacement. A recovery download button exposes preserved data from the dashboard. Integration tests cover automatic-save preservation, backup failure, successful recovery and reload. All 49 frontend tests and the production build pass; the conditional download UI is build-verified, not yet browser fault-injection tested.
 
 Demo time-zone configuration now survives reload rather than resetting to Denver, and invalid zones are rejected before they can break scheduled evaluation. A New York winter-time test confirms the expected local scheduling minute. Recovery download references are published only after backup success, persisted across reload and restricted to dedicated recovery keys. Tests verify failed backups expose no nonexistent download reference and successful backup references survive reload. All 50 frontend tests and the production build pass.
+
+Automation save and reload now reject nonboolean enable/restore flags, ambiguous rule identities and text exceeding firmware UTF-8 bounds. Alert commands must use the notification target. Firmware enforces the same safe identity alphabet and rejects reserved object keys. Generated fallback rule IDs use random UUIDs rather than timestamp collisions. All 51 frontend tests, 20 firmware tests and both builds pass.

@@ -443,6 +443,13 @@ static void test_automation_clock_comparisons(void) {
 static void test_automation_rejects_invalid_rules(void) {
     char error[96]; cJSON *rules=temperature_rules();
     cJSON *rule=cJSON_GetArrayItem(rules,0), *trigger=cJSON_GetObjectItemCaseSensitive(rule,"trigger");
+    const char *invalid_ids[]={"__proto__","constructor","prototype","zone.1"};
+    for (size_t i=0;i<sizeof(invalid_ids)/sizeof(invalid_ids[0]);++i) {
+        cJSON_ReplaceItemInObjectCaseSensitive(rule,"id",cJSON_CreateString(invalid_ids[i]));
+        TEST_ASSERT_FALSE(automation_validate_rules(rules,error,sizeof(error)));
+    }
+    cJSON_ReplaceItemInObjectCaseSensitive(rule,"id",cJSON_CreateString("valid-rule"));
+    TEST_ASSERT_TRUE(automation_validate_rules(rules,error,sizeof(error)));
     cJSON_ReplaceItemInObjectCaseSensitive(trigger,"holdFor",cJSON_CreateString("25 hours"));
     TEST_ASSERT_FALSE(automation_validate_rules(rules,error,sizeof(error)));
     cJSON_ReplaceItemInObjectCaseSensitive(trigger,"holdFor",cJSON_CreateString("0 sec"));

@@ -448,10 +448,15 @@ export function normalizeAutomationRule(rule) {
   if (!rule || typeof rule !== 'object') {
     throw new Error('Automation rule is required')
   }
+  if (typeof rule.enabled !== 'boolean' || rule.reverse?.enabled !== undefined && typeof rule.reverse.enabled !== 'boolean') throw new Error('Rule and restore enabled flags must be true or false')
+  const utf8Length = value => new TextEncoder().encode(value).length
+  const id = rule.id === undefined ? crypto.randomUUID().replaceAll('-', '') : rule.id
+  if (typeof id !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/.test(id) || ['constructor','prototype'].includes(id)) throw new Error('Rule identity must use 1–32 letters, digits, hyphens or underscores')
+  if (typeof rule.name !== 'string') throw new Error('Automation name must be text')
 
   const name = String(rule.name || '').trim()
-  if (name.length < 3) {
-    throw new Error('Automation name is required')
+  if (name.length < 3 || utf8Length(name) > 96) {
+    throw new Error('Automation name must contain at least 3 characters and at most 96 UTF-8 bytes')
   }
 
   const trigger = {
@@ -481,7 +486,7 @@ export function normalizeAutomationRule(rule) {
   }
 
   const reverse = {
-    enabled: Boolean(rule.reverse?.enabled),
+    enabled: rule.reverse?.enabled === true,
     source: String(rule.reverse?.source || trigger.source).trim(),
     operator: String(rule.reverse?.operator || '').trim(),
     value: String(rule.reverse?.value || '').trim(),
@@ -494,6 +499,10 @@ export function normalizeAutomationRule(rule) {
     restoreValue: String(rule.reverse?.restoreValue || '').trim()
   }
   reverse.action = reverse.action || (reverse.target && reverse.command ? `${reverse.target}.${reverse.command}` : '')
+  for (const [value, limit, label] of [[trigger.source,128,'Trigger source'],[trigger.value,256,'Trigger value'],[action.target,128,'Action target'],[action.value,256,'Action value'],[reverse.source,128,'Restore source'],[reverse.value,256,'Restore value'],[reverse.target,128,'Restore target'],[reverse.restoreValue,256,'Restore action value']]) {
+    if (utf8Length(value) > limit) throw new Error(`${label} exceeds ${limit} UTF-8 bytes`)
+  }
+  if (action.command === 'sendAlert' && action.target !== 'notification' || reverse.enabled && reverse.command === 'sendAlert' && reverse.target !== 'notification') throw new Error('Alert actions must target notifications')
 
   if (reverse.enabled && (!reverse.source || !automationOperators.has(reverse.operator) || !reverse.value || !automationCommandTypes.has(reverse.command) || !reverse.action)) {
     throw new Error('Automation reverse check is incomplete')
@@ -504,10 +513,10 @@ export function normalizeAutomationRule(rule) {
   if (reverse.enabled) validateCondition(reverse)
 
   return {
-    id: String(rule.id || `automation-${Date.now()}`).trim(),
+    id,
     name,
     detail: `${trigger.label || trigger.source} ${trigger.operator} ${trigger.value}`,
-    enabled: Boolean(rule.enabled),
+    enabled: rule.enabled,
     trigger,
     action,
     reverse
