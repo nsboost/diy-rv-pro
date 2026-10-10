@@ -1,6 +1,6 @@
 # DIY RV PRO user manual
 
-Engineering edition - 2026-10-09. This edition describes the current interface
+Engineering edition - 2026-10-10. This edition describes the current interface
 and explicitly identifies unfinished installed-controller workflows.
 
 ## Current operation
@@ -38,7 +38,36 @@ storage is available. Equipment actions are explicitly labeled as simulated. The
 production dashboard requires authentication and controller acknowledgement
 before accepting a saved profile. Connection or save failures remain errors;
 they do not become local saves. A successful device save still requires
-commissioning. Export/restore and complete first-boot enrollment remain unfinished.
+commissioning. Complete installed first-boot enrollment still requires hardware verification.
+
+### Saving, backups and imports
+
+Unsaved setup edits survive switching to another page and controller refreshes.
+They do not survive closing or reloading the browser tab. Save Configuration
+applies the inventory; Discard Edits and Reload restores the latest loaded
+inventory. A failed save retains your draft and displays the error.
+
+Export Configuration downloads the current draft, including unsaved edits, as
+compact JSON. Export validates the draft and the 24,576-byte import limit before
+download. Import Configuration validates a JSON file and opens it for review;
+it does not apply it until you choose Save Configuration. Preserve a known-good
+export before changing equipment. Firmware upgrade migration is unfinished.
+
+### Addressed temperature sensors and HVAC zones
+
+Configure a Temperature Bus with its GPIO and give it a location label. Save
+bus changes and restart an installed controller before discovering sensors.
+Use discovery to select each DS18B20 address on that bus, then label the sensor
+with its location, such as Living Room or Bedroom. Each physical sensor has its
+own ROM address even when multiple sensors share the same bus input.
+
+In HVAC Zones, select the configured temperature sensor for each zone. In an
+automation, choose that sensor's named temperature source. Selection follows
+its configured identity and physical address; a matching label cannot substitute
+another sensor. Invalid ROM addresses, duplicate addresses and conflicting GPIO
+assignments are rejected. The demo uses sample discovery readings. Actual bus
+capacity and wiring reliability require bench verification; a configured count
+is not a guarantee that twelve sensors will operate on a particular cable.
 
 ## Climate, water and power
 
@@ -54,9 +83,41 @@ requirements, not current guarantees.
 
 ## Automation
 
-The Automation page provides rule editing in the demo. The controller does not
-yet implement the complete persistent automation engine. Do not rely on it for
-scheduled heating, generator starting, water protection or alarm response.
+The Automation page supports creating, editing, enabling and disabling rules.
+Select a configured Sensor / State, comparison, threshold or range, and hold
+duration. Choose an equipment group, installed target, and supported action.
+Enable Cancel / Restore when a separate condition should reverse the action.
+The editor rejects removed sources, unsupported actions and malformed values.
+A rule referring to removed equipment displays Needs configuration; reconnect
+its intended target rather than assuming a replacement.
+
+Time ranges use HH:MM and can cross midnight. In the standalone demo, configure
+the schedule time zone in Settings. Device schedules use the controller's
+configured time zone and synchronized network clock; they wait when its clock
+is unavailable. Contact inputs use true for active and false for inactive, with
+equality, inequality or change comparisons. Faulted, disconnected or stale
+temperature/contact inputs cannot satisfy their conditions.
+
+The browser demo evaluates and persists rules and alert activation. Firmware
+contains a persistent rule store and an alert runtime using addressed
+temperatures and local contacts. Physical equipment actions, the complete
+source set and reboot activation behavior remain unfinished. Do not rely on
+this engineering release for installed HVAC, generator or protection control.
+Save/delete dialogs stay open until an outstanding operation finishes.
+
+## Notifications
+
+Delivery is in-app and browser only; email and SMS are not configured. Choose
+Send Alert / Notification in an automation and supply its message. Open
+Notifications from navigation or the alert control to inspect and acknowledge
+alerts. A failed acknowledgement remains visible as an error and can be retried.
+Acknowledgement marks an alert read; it does not reset an equipment condition.
+
+In-app and browser delivery have separate preferences saved in this browser.
+Browser notifications require browser permission and an open dashboard. If
+permission is denied or unavailable, the page explains the delivery state.
+This release does not provide background delivery after the dashboard closes.
+A browser alert is separate from a smoke, CO or propane detector.
 
 ## Optional security
 
@@ -66,8 +127,8 @@ and enrollment. The current configuration definitions do not provide a working
 alarm system. Independent smoke, CO and propane alarms remain necessary.
 
 Firmware now includes a local dry-contact GPIO sampler and authenticated
-`/api/security/inputs` endpoint. Its readings are not yet connected to the main
-dashboard, and physical operation is pending bench verification. See the
+`/api/security/inputs` endpoint. Configured contacts are displayed in the interface and available as automation
+sources; physical operation is pending bench verification. See the
 [contact bench sheet](WIRING_SECURITY_CONTACT_BENCH.md). This does not implement
 the optional remote expansion module, arming or alarm response.
 
@@ -79,8 +140,8 @@ editor is being aligned with the revised scope.
 
 Use the installation record to identify the board and firmware before updating.
 Do not erase flash or substitute board variants as a routine troubleshooting
-step. Configuration backup/restore, signed updates and documented recovery are
-required before deployment and remain under development. Report observed
+step. JSON inventory export/import is available as described above. Signed updates,
+complete upgrade migration and installed recovery remain under development. Report observed
 errors with device identity and software version, excluding passwords/tokens.
 
 See [Installation Manual](INSTALLATION_MANUAL.md),
