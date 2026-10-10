@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchConfig, getAdminToken, saveConfig } from '../api/telemetryClient.js'
 
-export default function ControllerSettings({ telemetry, apiOnline, onProfile, onSetup, onLoadDemo, onRestoreDemo }) {
+export default function ControllerSettings({ telemetry, apiOnline, onProfile, onSetup, onLoadDemo, onRestoreDemo, demoTimezone, onDemoTimezone }) {
   const [status, setStatus] = useState(null)
   const [config, setConfig] = useState(null)
   const [token, setToken] = useState('')
@@ -9,6 +9,8 @@ export default function ControllerSettings({ telemetry, apiOnline, onProfile, on
   const [remember, setRemember] = useState(false)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const [scheduleTimezone, setScheduleTimezone] = useState(demoTimezone || 'America/Denver')
+  useEffect(() => { setScheduleTimezone(demoTimezone || 'America/Denver') }, [demoTimezone])
   const [network, setNetwork] = useState({apSsid:'DIY-RV-PRO', apPassword:'',stationSsid:'',stationPassword:'',timezone:'America/Denver'})
   const refresh = async () => {
     const response = await fetch('/api/status', {headers:{Accept:'application/json'}})
@@ -65,6 +67,7 @@ export default function ControllerSettings({ telemetry, apiOnline, onProfile, on
     </form>}
     <button className="wide-action" onClick={onSetup} type="button">Open Configuration Wizard</button>
     {onLoadDemo && <div className="settings-form"><h3>Sample RV</h3><p>Load a sample inventory with two addressed temperature sensors, independent HVAC zones, battery, solar, inverter, generator and tanks. Your current demo inventory is backed up for restoration. Rules and alert history are retained.</p><button className="secondary-action" type="button" disabled={busy} onClick={() => run(async () => {await onLoadDemo();setMessage('Sample RV loaded in this browser. All values and equipment actions are simulated.')})}>Load Sample RV</button>{onRestoreDemo && <button className="secondary-action" type="button" disabled={busy} onClick={() => run(async () => {await onRestoreDemo();setMessage('Previous demo inventory restored.')})}>Restore Previous Demo Inventory</button>}</div>}
+    {onLoadDemo && onDemoTimezone && <div className="settings-form"><h3>Demo schedule clock</h3><p>Local Time automation rules use this time zone. Changes are saved in this browser.</p><label className="config-field"><span>Schedule time zone</span><input value={scheduleTimezone} maxLength={39} placeholder="America/Denver" onChange={event => setScheduleTimezone(event.target.value)} /></label><button className="secondary-action" type="button" disabled={busy} onClick={() => run(async () => {await onDemoTimezone(scheduleTimezone.trim());setMessage('Demo schedule time zone saved.')})}>Save Schedule Time Zone</button></div>}
     {message && <p className="configurator-status" role="status">{message}</p>}
   </section>
 }

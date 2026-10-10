@@ -1264,7 +1264,11 @@ export default function App() {
         title="Settings"
         description="Controller connection state, authentication status, and system-level setup entry points."
       >
-        <ControllerSettings telemetry={telemetry} apiOnline={apiOnline} onProfile={profile => setSystemProfile(normalizeSystemProfile(profile))} onSetup={() => selectSection('setup')} onLoadDemo={import.meta.env.DEV && !apiOnline && !getAdminToken() && snapshot.controller.mode === 'simulation' ? loadSampleRv : undefined} onRestoreDemo={demoBackup ? () => applyDemoInventory(demoBackup) : undefined} />
+        <ControllerSettings telemetry={telemetry} apiOnline={apiOnline} onProfile={profile => setSystemProfile(normalizeSystemProfile(profile))} onSetup={() => selectSection('setup')} onLoadDemo={import.meta.env.DEV && !apiOnline && !getAdminToken() && snapshot.controller.mode === 'simulation' ? loadSampleRv : undefined} onRestoreDemo={demoBackup ? () => applyDemoInventory(demoBackup) : undefined} demoTimezone={controller.getConfig().timezone} onDemoTimezone={timezone => {
+          if (!import.meta.env.DEV || apiOnline || getAdminToken() || snapshot.controller.mode !== 'simulation') throw new Error('Demo clock settings are unavailable while connected to a controller.')
+          controller.updateConfig({timezone})
+          controller.tick()
+        }} />
       </PageView>
     )
   }
