@@ -24,10 +24,25 @@ test('automation.setEnabled requires a known rule', () => {
   })
 
   assert.equal(updated.automationRules.find(rule => rule.id === 'quiet-hours').enabled, true)
+  for (const enabled of ['false', 0, null, undefined]) {
+    assert.throws(() => applyControlAction(initial, {type:'automation.setEnabled',id:'quiet-hours',enabled}), /must be true or false/)
+  }
   assert.throws(
     () => applyControlAction(initial, { type: 'automation.setEnabled', id: 'missing', enabled: true }),
     /not found/
   )
+})
+
+test('notification control acknowledges only the requested alert and updates unread count', () => {
+  const initial = cloneTelemetry()
+  initial.notifications = [{id:'one',read:false},{id:'two',read:false}]
+  initial.controller.alerts = 2
+  const updated = applyControlAction(initial,{type:'notification.acknowledge',id:'one'})
+  assert.equal(updated.notifications[0].read,true)
+  assert.equal(updated.notifications[1].read,false)
+  assert.equal(updated.controller.alerts,1)
+  assert.equal(initial.notifications[0].read,false)
+  assert.throws(() => applyControlAction(initial,{type:'notification.acknowledge',id:'missing'}), /not found/)
 })
 
 test('hvac setpoint validation rejects unsafe ranges', () => {

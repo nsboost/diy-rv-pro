@@ -98,6 +98,18 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
     listeners.forEach(listener => listener(snapshot))
   }
 
+  const acknowledge = id => {
+    if (!notifications.some(item => item.id === id)) throw new Error('Notification not found')
+    const previous = notifications
+    notifications = notifications.map(item => item.id === id ? { ...item, read: true } : item)
+    if (!persist()) {
+      notifications = previous
+      emit()
+      throw new Error('Acknowledgement could not be saved. Free browser storage and try again.')
+    }
+    emit()
+    return structuredClone(telemetry)
+  }
   return {
     getTelemetry() {
       emit()
@@ -136,17 +148,7 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
       return () => listeners.delete(listener)
     },
     setReadings(readings) { telemetry.temperatures = structuredClone(readings) },
-    acknowledge(id) {
-      if (!notifications.some(item => item.id === id)) throw new Error('Notification not found')
-      const previous = notifications
-      notifications = notifications.map(item => item.id === id ? { ...item, read: true } : item)
-      if (!persist()) {
-        notifications = previous
-        emit()
-        throw new Error('Acknowledgement could not be saved. Free browser storage and try again.')
-      }
-      emit()
-    },
+    acknowledge,
     setNotificationSettings(settings) {
       for (const key of ['inApp', 'desktop']) if (typeof settings[key] === 'boolean') notificationSettings[key] = settings[key]
       persist(); emit()
@@ -207,6 +209,7 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
       return structuredClone(telemetry)
     },
     dispatch(action) {
+      if (action?.type === 'notification.acknowledge') return acknowledge(action.id)
       if (action?.type?.startsWith('generator.') || action?.type?.startsWith('hvac.')) {
         const current = projectTelemetry(telemetry, config.features)
         const systems = controlSystems(config.features)
@@ -261,6 +264,13 @@ export function applyControlAction(currentTelemetry, action) {
 
   const next = structuredClone(currentTelemetry)
 
+  if (action.type === 'notification.acknowledge') {
+    const notification = next.notifications?.find(item => item.id === action.id)
+    if (!notification) throw new Error('Notification not found')
+    notification.read = true
+    next.controller.alerts = next.notifications.filter(item => !item.read).length
+  }
+
   if (action.type === 'generator.start') {
     next.generator.running = true
     next.events.unshift({
@@ -286,7 +296,8 @@ export function applyControlAction(currentTelemetry, action) {
     if (!rule) {
       throw new Error('Automation rule not found')
     }
-    rule.enabled = Boolean(action.enabled)
+    if (typeof action.enabled !== 'boolean') throw new Error('Rule enabled must be true or false')
+    rule.enabled = action.enabled
   }
 
   if (action.type === 'automation.upsert') {

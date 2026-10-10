@@ -89,7 +89,7 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
   runtime. Temperature-based alerts run in a background task. Physical equipment
   drivers, other source values, time synchronization and hardware bench checks
   remain incomplete; equipment prototype simulation is labeled explicitly.
-- The frontend suite currently contains 47 passing tests, including malformed
+- The frontend suite currently contains 48 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
   contain 20 passing tests including assigned pump outputs, boolean flag validation, rule identity retention, disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
@@ -206,3 +206,5 @@ The Notifications menu now displays browser delivery readiness separately from t
 Browser-demo notification acknowledgement now requires persistence success. A failed storage write rolls back the read flag, preserves the previous saved payload and exposes a retryable error in the Notifications menu. Missing notification IDs are rejected. A quota-failure integration test verifies unread rollback, successful retry and acknowledged state after reload. All 46 frontend tests and the production build pass.
 
 Browser-demo configuration and automation edits now commit only when storage succeeds. Failed writes restore the previous configuration/telemetry or rules/runtime activation and reject the operation so menus display a save error. The integration test covers configuration save, enable/disable, deletion and upsert failures, preserves active alert state without duplicate delivery after recovery, and confirms successful retries survive reload. All 47 frontend tests and the production build pass.
+
+The demo control API now executes notification.acknowledge through the same persistence-checked path as the menu, returning updated unread counts instead of a successful no-op. Missing IDs reject consistently. Rule enable commands require actual booleans; a string 'false' cannot enable a rule. Tests verify isolated acknowledgement, unread counts, no mutation of the input snapshot, save-failure rollback and retry through dispatch. All 48 frontend tests and the production build pass.

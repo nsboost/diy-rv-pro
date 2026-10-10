@@ -79,14 +79,15 @@ test('failed acknowledgement persistence leaves the alert unread and allows retr
   const alert = controller.tick(1000).notifications.find(item => item.ruleId === alertRule.id)
   const saved = values.get('diy-rv-demo-v2')
   failWrites = true
-  assert.throws(() => controller.acknowledge(alert.id), /could not be saved/)
+  assert.throws(() => controller.dispatch({type:'notification.acknowledge',id:alert.id}), /could not be saved/)
   assert.equal(controller.getTelemetry().notifications.find(item => item.id === alert.id).read,false)
   assert.equal(values.get('diy-rv-demo-v2'),saved)
   failWrites = false
-  controller.acknowledge(alert.id)
+  const acknowledged = controller.dispatch({type:'notification.acknowledge',id:alert.id})
+  assert.equal(acknowledged.notifications.find(item => item.id === alert.id).read,true)
   const restored = createLocalController(cloneTelemetry(), {storage})
   assert.equal(restored.getTelemetry().notifications.find(item => item.id === alert.id).read,true)
-  assert.throws(() => controller.acknowledge('missing'), /not found/)
+  assert.throws(() => controller.dispatch({type:'notification.acknowledge',id:'missing'}), /not found/)
 })
 
 test('failed configuration and rule saves preserve the committed state and activation', () => {
