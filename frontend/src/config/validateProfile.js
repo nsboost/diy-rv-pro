@@ -4,6 +4,8 @@ import { optionSets } from './systemProfile.js'
 export const sectionLimits = { temperatureBuses: 4, hvacZones: 8, temperatureZones: 32, solarChargeControllers: 8, inverters: 6, batteries: 8, generators: 2, acBreakers: 48, dcCircuits: 64, waterTanks: 12, waterHeaters: 4, waterPumps: 8, propaneSystems: 4, weatherStations: 2, cameras: 8, securityZones: 16, securitySensors: 64, customIo: 64 }
 const powerRanges = { maxCurrentA: [0, 500], capacityAh: [0, 2000] }
 const utf8Length = value => new TextEncoder().encode(value).length
+// Keep optional inventory text fields aligned with feature_config.c storage bounds.
+const textLimits = { type:32, controlMode:32, temperatureSensorId:32, busId:32, address:16, sensorType:32, communication:32, inputType:32, contactPolarity:32, zoneId:32, role:32, protocol:32, gatewayName:48, streamUrl:256, snapshotUrl:256 }
 const numericRanges = {
   hvacZones: { stageCount: [0, 4] },
   generators: { maxCrankSeconds: [1, 30], warmupSeconds: [0, 600], cooldownSeconds: [0, 600] },
@@ -25,7 +27,9 @@ export function validateProfile(profile) {
       if (!item || typeof item !== 'object' || Array.isArray(item)) { structureErrors.push(`${section}: invalid item`); continue }
       if (typeof item.label !== 'string') structureErrors.push(`${section}: labels must be text`)
       if (typeof item.enabled !== 'boolean') structureErrors.push(`${section}: enabled must be true or false`)
-      if (section === 'temperatureZones' && item.address !== undefined && typeof item.address !== 'string') structureErrors.push(`${section}: sensor address must be text`)
+      for (const [key, limit] of Object.entries(textLimits)) {
+        if (item[key] !== undefined && (typeof item[key] !== 'string' || utf8Length(item[key]) > limit)) structureErrors.push(`${section}: ${key} must be text using at most ${limit} UTF-8 bytes`)
+      }
     }
   }
   if (structureErrors.length) return [...new Set(structureErrors)]

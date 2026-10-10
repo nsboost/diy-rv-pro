@@ -45,6 +45,16 @@ test('setup measures text limits in UTF-8 bytes to match controller storage', ()
   assert.ok(errors.some(error => error.includes('oversized item identity')))
 })
 
+test('imported optional text fields are checked before sensor and reference validation', () => {
+  for (const [key, limit] of [['busId',32], ['temperatureSensorId',32], ['gatewayName',48], ['streamUrl',256], ['snapshotUrl',256], ['address',16], ['protocol',32]]) {
+    for (const value of [null, 42, {}, 'é'.repeat(limit / 2 + 1)]) {
+      const profile = structuredClone(demoProfile)
+      profile.temperatureZones[0][key] = value
+      assert.ok(validateProfile(profile).some(error => error.includes(`${key} must be text`)), key)
+    }
+  }
+})
+
 test('two zones share one bus but keep stable, separate sensor identities', () => {
   assert.deepEqual(validateProfile(demoProfile), [])
   const readings = demoReadings(1000).reverse()
