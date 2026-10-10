@@ -374,3 +374,13 @@ test('hardware schedules never fall back to browser time when controller clock i
   for (const localMinute of [null,-1,1440,2.5,'100',NaN]) assert.equal(readAutomationSource({localMinute},'time.local',0),undefined)
   assert.equal(typeof readAutomationSource({controller:{mode:'simulation'}},'time.local',0),'number')
 })
+
+test('HVAC temperature aliases require a healthy fresh selected sensor',()=>{
+  const zone = {id:'living',tempF:72,sensorStatus:'ok',sensorSampledAt:1000}
+  const telemetry = {hvacZones:[zone]}
+  assert.equal(readAutomationSource(telemetry,'hvac.living.tempF',2000),72)
+  assert.equal(readAutomationSource(telemetry,'hvac.living.tempF',32000),undefined)
+  assert.equal(readAutomationSource(telemetry,'hvac.living.tempF',500),undefined)
+  zone.sensorSampledAt = undefined
+  assert.equal(readAutomationSource(telemetry,'hvac.living.tempF',2000),undefined)
+})

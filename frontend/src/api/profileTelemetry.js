@@ -14,7 +14,7 @@ export function projectTelemetry(snapshot, profile, now = Date.now()) {
     const original = snapshot.hvacZones.find(item => item.id === zone.id)
     const projected = { id: zone.id, name: zone.label, setpointF: 72, coolSetpointF: 72, heatSetpointF: 66,
       autoDifferentialF: 3, sensorOffsetF: 0, mode: 'Off', ac: false, heatPump: false, furnace: false, fan: false, auto: false,
-      ...original, controlMode: zone.controlMode, availableEquipment: ['ac','furnace','heatPump','fan'].filter(key => zone[({ac:'coolRelay',furnace:'furnaceRelay',heatPump:'heatPumpRelay',fan:'fanRelay'})[key]] >= 0), name: zone.label, tempF: reading?.tempF ?? null, sensorStatus: reading?.status || 'unassigned',
+      ...original, controlMode: zone.controlMode, availableEquipment: ['ac','furnace','heatPump','fan'].filter(key => zone[({ac:'coolRelay',furnace:'furnaceRelay',heatPump:'heatPumpRelay',fan:'fanRelay'})[key]] >= 0), name: zone.label, tempF: reading?.tempF ?? null, sensorStatus: reading?.status || 'unassigned', sensorSampledAt: reading?.sampledAt,
       sensorLabel: reading?.label || 'No sensor assigned', temperatureSensorId: zone.temperatureSensorId }
     if (simulated) {
       for (const equipment of ['ac', 'furnace', 'heatPump', 'fan']) {
