@@ -374,3 +374,8 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 - Contact automation sources require exactly one reading for the configured sensor identity. Conflicting duplicates, including a valid/stale pair, supply null instead of picking the first healthy-looking record. Unique healthy boolean false remains a valid inactive state.
 - 24 firmware host tests passed with duplicate healthy and mixed stale/healthy contact coverage. Physical contact input behavior remains bench-unverified.
 - ESP32-S3 build passed: static RAM 77,872 bytes; flash 994,601 bytes. No hardware flashed. Live GitHub run 38047754154 for prior commit 7acd09c was still in progress at inspection.
+
+### Preserve successful alert activation through input faults (October 10)
+- Firmware retains successful activation when the trigger input is unavailable instead of treating missing data as a healthy nonmatching value. Hold timing still resets. A healthy nonmatching value rearms a non-restoring rule; recovery to the same triggered value alone does not duplicate its alert.
+- 25 firmware host tests passed, including activation, null input, same-condition recovery, healthy recovery and subsequent reactivation. This is a prerequisite for reboot persistence; activation is still RAM-only and physical fault behavior remains unverified.
+- ESP32-S3 build passed: static RAM 77,872 bytes; flash 994,609 bytes. No hardware flashed.

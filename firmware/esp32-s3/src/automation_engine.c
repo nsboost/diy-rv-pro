@@ -368,7 +368,7 @@ void automation_engine_tick(automation_engine_t *engine, const cJSON *rules,
         ready = now_ms >= state->since_ms && now_ms - state->since_ms >= hold;
     } else if (!matches) {
       state->holding = false;
-      if (!cJSON_IsTrue(get(reverse, "enabled")))
+      if (state->input_available && !cJSON_IsTrue(get(reverse, "enabled")))
         state->active = false;
     }
     if (ready && now_ms >= state->retry_ms) {
