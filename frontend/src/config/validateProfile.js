@@ -6,6 +6,7 @@ const powerRanges = { maxCurrentA: [0, 500], capacityAh: [0, 2000] }
 const utf8Length = value => new TextEncoder().encode(value).length
 // Keep optional inventory text fields aligned with feature_config.c storage bounds.
 const textLimits = { type:32, controlMode:32, temperatureSensorId:32, busId:32, address:16, sensorType:32, communication:32, inputType:32, contactPolarity:32, zoneId:32, role:32, protocol:32, gatewayName:48, streamUrl:256, snapshotUrl:256 }
+const booleanFields = ['monitored', 'controllable', 'hasAcElement', 'hasDcElement', 'hasPropane', 'tankless', 'recircPump', 'requiresAuth', 'recordMotion', 'armHome', 'armAway', 'lowBattery']
 const numericRanges = {
   hvacZones: { stageCount: [0, 4] },
   generators: { maxCrankSeconds: [1, 30], warmupSeconds: [0, 600], cooldownSeconds: [0, 600] },
@@ -27,6 +28,9 @@ export function validateProfile(profile) {
       if (!item || typeof item !== 'object' || Array.isArray(item)) { structureErrors.push(`${section}: invalid item`); continue }
       if (typeof item.label !== 'string') structureErrors.push(`${section}: labels must be text`)
       if (typeof item.enabled !== 'boolean') structureErrors.push(`${section}: enabled must be true or false`)
+      for (const key of booleanFields) {
+        if (item[key] !== undefined && typeof item[key] !== 'boolean') structureErrors.push(`${section}: ${key} must be true or false`)
+      }
       for (const [key, limit] of Object.entries(textLimits)) {
         if (item[key] !== undefined && (typeof item[key] !== 'string' || utf8Length(item[key]) > limit)) structureErrors.push(`${section}: ${key} must be text using at most ${limit} UTF-8 bytes`)
       }

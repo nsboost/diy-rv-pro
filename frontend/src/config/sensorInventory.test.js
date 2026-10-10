@@ -55,6 +55,16 @@ test('imported optional text fields are checked before sensor and reference vali
   }
 })
 
+test('imported control flags cannot use truthy strings or numbers', () => {
+  for (const key of ['controllable', 'monitored', 'requiresAuth', 'armAway', 'hasPropane']) {
+    for (const value of ['false', 1, null]) {
+      const profile = structuredClone(demoProfile)
+      profile.acBreakers[0][key] = value
+      assert.ok(validateProfile(profile).some(error => error.includes(`${key} must be true or false`)))
+    }
+  }
+})
+
 test('two zones share one bus but keep stable, separate sensor identities', () => {
   assert.deepEqual(validateProfile(demoProfile), [])
   const readings = demoReadings(1000).reverse()

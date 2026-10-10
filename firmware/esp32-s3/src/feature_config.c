@@ -185,6 +185,14 @@ static bool validate_basic_item(const cJSON *item, char *error, size_t error_len
         set_error(error, error_len, "Profile array item must be an object");
         return false;
     }
+    static const char *boolean_fields[] = {"enabled", "monitored", "controllable", "hasAcElement", "hasDcElement", "hasPropane", "tankless", "recircPump", "requiresAuth", "recordMotion", "armHome", "armAway", "lowBattery"};
+    for (size_t i = 0; i < sizeof(boolean_fields) / sizeof(boolean_fields[0]); ++i) {
+        const cJSON *value = cJSON_GetObjectItemCaseSensitive(item, boolean_fields[i]);
+        if (value != NULL && !cJSON_IsBool(value)) {
+            set_error(error, error_len, "Inventory flags must be true or false");
+            return false;
+        }
+    }
     return optional_string_len(item, "id", 33, error, error_len) &&
            optional_string_len(item, "label", 49, error, error_len) &&
            optional_string_len(item, "type", 33, error, error_len) &&
