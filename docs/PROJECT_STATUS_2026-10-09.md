@@ -319,4 +319,3 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 - Kept the Setup Wizard mounted in a hidden container when visiting other pages, preserving unsaved inventory, selected equipment, and discovery results during navigation.
 - Browser verification: edited RV name without saving, visited Automations, returned to Setup, and confirmed the draft remained. Discard restored Demo RV; no test inventory was saved. Browser error log was empty.
 - Validation: 79 frontend tests passed; production build passed. Existing bundle-size warning remains. Drafts are session-only and must be saved before closing or reloading the browser.
-
