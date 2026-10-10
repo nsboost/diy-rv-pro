@@ -345,3 +345,7 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 ### Accepted commands with failed telemetry confirmation (October 10)
 - Device command dispatch distinguishes controller rejection from successful command acknowledgement followed by failed telemetry refresh. The latter explicitly reports acceptance and asks the operator to verify state before resending; it never automatically repeats the mutation. Confirmation uses the same token as the command.
 - Validation: 88 frontend tests and production build passed. New tests exercise accepted/failed confirmation, rejected commands without a follow-up read, and authenticated successful confirmation. This request-level fault simulation does not establish physical equipment operation.
+
+### GitHub validation reconciliation (October 10)
+- Queried live Actions run 38047300593 for commit 1904cb9: frontend succeeded; ESP32 firmware compilation and Windows firmware bootstrap were still running. These results do not establish complete remote CI success.
+- Added workflow concurrency by workflow/ref, cancelling superseded revisions when a newer branch or PR push arrives. Independent branches and pull requests retain separate validation groups. This avoids accumulating obsolete firmware builds while changes are reconciled.

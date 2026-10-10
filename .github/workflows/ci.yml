@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
 
+# Keep validation focused on the newest revision of each branch or PR.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   frontend:
     runs-on: ubuntu-latest
