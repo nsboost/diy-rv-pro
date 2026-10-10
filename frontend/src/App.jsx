@@ -176,7 +176,7 @@ function MobileNavDrawer({ telemetry, activeSection, open, onClose, onSelect }) 
 
   return (
     <div className="mobile-drawer-backdrop" role="presentation" onMouseDown={event => {
-      if (!busy && event.target === event.currentTarget) {
+      if (event.target === event.currentTarget) {
         onClose()
       }
     }}>
@@ -285,7 +285,7 @@ function Modal({ title, children, onClose, busy = false }) {
   }, [busy, onClose])
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={event => {
-      if (event.target === event.currentTarget) {
+      if (!busy && event.target === event.currentTarget) {
         onClose()
       }
     }}>
