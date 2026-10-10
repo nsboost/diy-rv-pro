@@ -61,7 +61,11 @@ recovery tests remain outstanding.
   All 30 firmware host tests and the ESP32-S3 build pass. This helper is now
   connected to the authenticated repair endpoint, which commits and verifies a
   separate original copy before replacing the working record. Original download
-  and restart-pending feedback are implemented. The import menu, mocked NVS-failure
+  and restart-pending feedback are implemented. Settings now supports recovery file
+  review/discard, explicit backup acknowledgement and authenticated disabled-rule
+  save, with controls unavailable while disconnected or without a storage fault.
+  Browser review/discard passed with one rule and one alert, and no console errors.
+  All 110 frontend tests and the production build pass. Mocked NVS-failure
   coverage and physical interrupted-write testing remain incomplete; no
   recovery-completion claim.
   Startup no longer automatically erases the whole NVS partition on no-free-pages

@@ -14,6 +14,7 @@ export function validateTelemetry(value) {
   }
   if (value.ruleRuntime !== undefined && !object(value.ruleRuntime)) reject()
   if (value.storageError !== undefined && typeof value.storageError !== 'string') reject()
+  if (value.automationRecoveryPending !== undefined && typeof value.automationRecoveryPending !== 'boolean') reject()
   const fields = (record, strings = [], numbers = [], booleans = []) => {
     for (const key of strings) if (record[key] !== undefined && typeof record[key] !== 'string') reject()
     for (const key of numbers) if (record[key] !== undefined && record[key] !== null && !Number.isFinite(record[key])) reject()

@@ -3,9 +3,9 @@ export async function requestControllerJson(url, options = {}, {timeoutMs = 1000
   return requestController(url, options, timeoutMs, response => response.json())
 }
 
-export async function requestControllerBackup(token) {
+export async function requestControllerBackup(token, {original = false} = {}) {
   if (!token) throw new Error('Connect with the controller admin token before downloading its saved automation data.')
-  return requestController('/api/automation/backup', {headers:{Authorization:`Bearer ${token}`}}, 10000, async response => {
+  return requestController(original ? '/api/automation/original' : '/api/automation/backup', {headers:{Authorization:`Bearer ${token}`}}, 10000, async response => {
     if (response.headers.get('Content-Type')?.split(';')[0].trim() !== 'application/octet-stream') throw new Error('Controller returned an invalid backup response.')
     const declaredLength = response.headers.get('Content-Length')
     if (declaredLength !== null && (!/^\d+$/.test(declaredLength) || Number(declaredLength) < 1 || Number(declaredLength) > 65537)) {

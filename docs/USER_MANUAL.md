@@ -152,16 +152,28 @@ then **Download Automation Backup**. Keep the downloaded
 `diy-rv-automation-recovery.bin` unchanged. It contains the original saved record,
 including any damaged bytes; it is separate from the JSON inventory backup.
 The button requires an authenticated connection. Downloading does not erase data,
-repair rules or resume automation. Repair/import and physical recovery testing
-remain under development. If download fails, the original is still retained;
+repair rules or resume automation. If download fails, the original is still retained;
 do not erase flash as a workaround.
+
+Choose **Review recovery file** to inspect a valid original or a separately repaired
+JSON copy. The review shows rule names, conditions, actions and retained alert
+counts. Invalid UTF-8, hidden bytes, malformed rules or invalid alert history are
+rejected. Choose **Discard Recovery Review** to close it without a controller write.
+To save, retain the original backup, check the backup acknowledgement, reconnect
+with the admin token and use **Save Disabled Recovery**. Saving is available only
+while the controller reports an automation storage fault. Firmware commits and
+reads back a separate original copy before replacing the working record; all
+recovered rules are disabled. Restart the controller, review them and enable each
+desired rule individually. **Download Retained Original** retrieves the most recent
+original copy kept by recovery. On-device storage-failure and interrupted-write
+testing remains outstanding. If confirmation fails, check controller state before
+retrying rather than assuming no change occurred.
 
 If NVS initialization itself fails, firmware now retains the partition and stops
 startup with a serial diagnostic instead of automatically erasing configuration,
 credentials and recovery records. The dashboard will be unavailable in that case;
 partition-level maintenance recovery is required. The authenticated record-repair
-API can only operate when NVS is readable. Its import menu and device fault tests
-remain unfinished.
+API can only operate when NVS is readable. Device fault tests remain unfinished.
 
 See [Installation Manual](INSTALLATION_MANUAL.md),
 [Bill of Materials](BILL_OF_MATERIALS.md) and

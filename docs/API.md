@@ -29,7 +29,8 @@ The ESP32-S3 serves the dashboard and local JSON API over the device access poin
   multi-key atomic transaction is claimed. Failed commits require checking state
   before retrying. Eight original-copy slots are retained without overwriting; a full
   slot set, oversized/unreadable original or memory/storage failure blocks recovery.
-  The import menu and on-device interrupted-write tests are not yet complete.
+  Settings provides local review/discard, disabled-rule recovery save and original
+  download. On-device interrupted-write tests are not yet complete.
 - `PUT /api/config`: first-boot setup and subsequent configuration updates.
 - `POST /api/control`: rule CRUD, notification acknowledgment and prototype equipment controls. Always requires authorization. Body limit: 4,096 bytes.
 - `WS /ws/telemetry`: authorized telemetry WebSocket handshake.

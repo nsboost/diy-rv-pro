@@ -1,5 +1,6 @@
 import { clearAdminToken, storeAdminToken } from '../api/authStorage.js'
 import { requestControllerJson, requestControllerBackup } from '../api/controllerRequest.js'
+import { prepareAutomationRecovery, saveAutomationRecovery } from '../api/automationRecovery.js'
 import { useEffect, useState } from 'react'
 import { fetchConfig, getAdminToken, saveConfig } from '../api/telemetryClient.js'
 
@@ -11,6 +12,21 @@ export default function ControllerSettings({ telemetry, apiOnline, onProfile, on
   const [remember, setRemember] = useState(false)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const [recoveryDraft, setRecoveryDraft] = useState(null)
+  const [originalKept, setOriginalKept] = useState(false)
+  const [recoverySaved, setRecoverySaved] = useState(false)
+  const recoveryPending = telemetry.automationRecoveryPending === true || recoverySaved
+  const downloadBackup = async original => {
+    const bytes = await requestControllerBackup(getAdminToken(), {original})
+    const url = URL.createObjectURL(new Blob([bytes], {type:'application/octet-stream'}))
+    try {
+      const link = document.createElement('a')
+      link.href = url
+      link.download = original ? 'diy-rv-automation-original.bin' : 'diy-rv-automation-recovery.bin'
+      link.click()
+    } finally { setTimeout(() => URL.revokeObjectURL(url), 1000) }
+    setMessage('Automation backup downloaded. Keep this original file before attempting recovery.')
+  }
   const [scheduleTimezone, setScheduleTimezone] = useState(demoTimezone || 'America/Denver')
   useEffect(() => { setScheduleTimezone(demoTimezone || 'America/Denver') }, [demoTimezone])
   const [network, setNetwork] = useState({apSsid:'DIY-RV-PRO', apPassword:'',stationSsid:'',stationPassword:'',timezone:'America/Denver'})
@@ -63,17 +79,27 @@ export default function ControllerSettings({ telemetry, apiOnline, onProfile, on
       <button className="primary-action" type="submit" disabled={busy}>{status.setupComplete ? 'Save Network Configuration' : 'Complete First-Boot Setup'}</button>
     </form>}
     <button className="wide-action" onClick={onSetup} type="button">Open Configuration Wizard</button>
-    {telemetry.controller.mode === 'device' && <div className="settings-form"><h3>Automation storage backup</h3><p>Download the original stored automation record before recovery. This preserves its exact bytes, including unreadable data, and does not change controller rules or clear a storage fault.</p><button className="secondary-action" disabled={busy || !apiOnline} type="button" onClick={() => run(async () => {
-      const bytes = await requestControllerBackup(getAdminToken())
-      const url = URL.createObjectURL(new Blob([bytes], {type:'application/octet-stream'}))
-      try {
-        const link = document.createElement('a')
-        link.href = url
-        link.download = 'diy-rv-automation-recovery.bin'
-        link.click()
-      } finally { setTimeout(() => URL.revokeObjectURL(url), 1000) }
-      setMessage('Automation backup downloaded. Keep this original file before attempting recovery.')
-    })}>Download Automation Backup</button></div>}
+    {telemetry.controller.mode === 'device' && <div className="settings-form"><h3>Automation storage recovery</h3><p>Download the stored record before recovery. Keep the original unchanged and repair a separate copy. Recovered rules stay disabled until you restart and review them.</p><div className="config-toolbar"><button className="secondary-action" disabled={busy || !apiOnline} type="button" onClick={() => run(() => downloadBackup(false))}>Download Automation Backup</button><button className="secondary-action" disabled={busy || !apiOnline} type="button" onClick={() => run(() => downloadBackup(true))}>Download Retained Original</button></div>
+      {recoveryPending ? <p role="status">Recovery saved. Restart the controller, then review and enable rules individually.</p> : <>
+        <label className="config-field"><span>Review recovery file</span><input type="file" accept=".json,.bin,application/json,application/octet-stream" disabled={busy} onChange={event => {
+          const file = event.target.files?.[0]
+          event.target.value = ''
+          if (!file) return
+          setRecoveryDraft(null); setOriginalKept(false)
+          run(async () => {
+            if (!file.size || file.size > 65537) throw new Error('Recovery file must contain at most 65,537 bytes.')
+            const record = prepareAutomationRecovery(await file.arrayBuffer())
+            setRecoveryDraft({name:file.name,record})
+            setMessage('Recovery file validated for review. Nothing has been saved to the controller.')
+          })
+        }} /></label>
+        {recoveryDraft && <div><p><strong>{recoveryDraft.name}</strong>: {recoveryDraft.record.rules.length} {recoveryDraft.record.rules.length === 1 ? 'rule' : 'rules'} and {recoveryDraft.record.notifications.length} {recoveryDraft.record.notifications.length === 1 ? 'alert' : 'alerts'}. All recovered rules will be disabled and prior activation cleared.</p><ul>{recoveryDraft.record.rules.map(rule => <li key={rule.id}><strong>{rule.name}</strong>: {rule.detail} → {rule.action.targetLabel} / {rule.action.commandLabel}</li>)}</ul><label className="inline-check"><input type="checkbox" checked={originalKept} disabled={busy} onChange={event => setOriginalKept(event.target.checked)} />I have kept the original backup unchanged.</label><div className="config-toolbar"><button className="primary-action" type="button" disabled={busy || !apiOnline || !telemetry.storageError || !originalKept} onClick={() => run(async () => {
+          await saveAutomationRecovery(recoveryDraft.record, getAdminToken())
+          setRecoverySaved(true); setRecoveryDraft(null)
+          setMessage('Recovery saved with all rules disabled. Original retained. Restart the controller before reviewing rules.')
+        })}>Save Disabled Recovery</button><button className="secondary-action" disabled={busy} type="button" onClick={() => {setRecoveryDraft(null);setOriginalKept(false);setMessage('Recovery review discarded. Controller data is unchanged.')}}>Discard Recovery Review</button></div>{!apiOnline ? <p>Reconnect to the controller before saving recovery.</p> : !telemetry.storageError && <p>Recovery is available only when the controller reports an automation storage fault.</p>}</div>}
+      </>}
+    </div>}
     {onLoadDemo && <div className="settings-form"><h3>Sample RV</h3><p>Load a sample inventory with two addressed temperature sensors, independent HVAC zones, battery, solar, inverter, generator and tanks. Your current demo inventory is backed up for restoration. Rules and alert history are retained.</p><button className="secondary-action" type="button" disabled={busy} onClick={() => run(async () => {await onLoadDemo();setMessage('Sample RV loaded in this browser. All values and equipment actions are simulated.')})}>Load Sample RV</button>{onRestoreDemo && <button className="secondary-action" type="button" disabled={busy} onClick={() => run(async () => {await onRestoreDemo();setMessage('Previous demo inventory restored.')})}>Restore Previous Demo Inventory</button>}</div>}
     {onLoadDemo && onDemoTimezone && <div className="settings-form"><h3>Demo schedule clock</h3><p>Local Time automation rules use this time zone. Changes are saved in this browser.</p><label className="config-field"><span>Schedule time zone</span><input value={scheduleTimezone} maxLength={39} placeholder="America/Denver" onChange={event => setScheduleTimezone(event.target.value)} /></label><button className="secondary-action" type="button" disabled={busy} onClick={() => run(async () => {await onDemoTimezone(scheduleTimezone.trim());setMessage('Demo schedule time zone saved.')})}>Save Schedule Time Zone</button></div>}
     {message && <p className="configurator-status" role="status">{message}</p>}
