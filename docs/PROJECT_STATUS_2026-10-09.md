@@ -89,7 +89,7 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
   runtime. Temperature-based alerts run in a background task. Physical equipment
   drivers, other source values, time synchronization and hardware bench checks
   remain incomplete; equipment prototype simulation is labeled explicitly.
-- The frontend suite currently contains 53 passing tests, including malformed
+- The frontend suite currently contains 54 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
   contain 20 passing tests including assigned pump outputs, boolean flag validation, rule identity retention, disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
@@ -218,3 +218,5 @@ Automation save and reload now reject nonboolean enable/restore flags, ambiguous
 Manual HVAC mode changes and Auto now check configured output interlocks rather than bypassing block rules through mode commands. Off clears simulated cooling, heating, fan and Auto states; setMode synchronizes the Auto flag. Integration tests start from Off, confirm blocked Cool/Auto commands reject, disable the block, start cooling and confirm Off clears it. All 52 frontend tests and the production build pass. This is demo logic; physical thermostat/equipment state machines still require implementation and commissioning.
 
 Setup now checks enabled power-device communications/sensor inputs, tank sensor types, camera URLs and security input strategies before device submission. Missing generator and controllable-circuit relay fields cannot bypass required assignments through undefined comparisons. Disabled inventory may retain incomplete assignments. An import regression test covers omitted relay fields and missing input strategies, then confirms disabling those items permits retention. All 53 frontend tests and the production build pass. Selecting a protocol still does not establish an implemented physical driver.
+
+Saved demo alerts now require unique bounded identities, bounded text, valid severity/read fields and finite supported timestamps. Duplicate or malformed entries enter the existing preserved-data recovery flow rather than loading an ambiguous inbox. Regression tests confirm invalid alerts cannot be acknowledged, automatic ticks preserve the original payload and no corrupt alert appears as a normal inbox item. All 54 frontend tests and the production build pass.

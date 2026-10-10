@@ -190,6 +190,22 @@ test('saved local time zone survives reload and invalid zones cannot break sched
   assert.equal(restored.getConfig().timezone,'America/New_York')
 })
 
+test('duplicate or malformed saved alerts are preserved for recovery instead of loaded', () => {
+  const valid = {id:'alert-one',message:'Temperature alert',read:false,severity:'warning',createdAt:1000,ruleId:alertRule.id}
+  const corruptAlerts = [[valid,{...valid}], [{...valid,createdAt:'yesterday'}], [{...valid,createdAt:-1}], [{...valid,severity:'unknown'}], [{...valid,message:{text:'alert'}}], [{...valid,read:'false'}]]
+  for (const notifications of corruptAlerts) {
+    const payload = JSON.stringify({version:2,config:{features:demoProfile},rules:[],notifications})
+    const values = new Map([['diy-rv-demo-v2',payload]])
+    const storage = {getItem:key => values.get(key) ?? null,setItem:(key,value) => values.set(key,value)}
+    const controller = createLocalController(cloneTelemetry(), {storage,initialProfile:demoProfile})
+    const state = controller.tick(1000)
+    assert.equal(state.recoveryRequired,true)
+    assert.deepEqual(state.notifications,[])
+    assert.equal(values.get('diy-rv-demo-v2'),payload)
+    assert.throws(() => controller.acknowledge(valid.id), /not found/)
+  }
+})
+
 test('blocking rule prevents generator action irrespective of rule ordering', () => {
   const controller = createLocalController(cloneTelemetry(), {initialProfile: demoProfile})
   const trigger = {source: 'battery.voltage', operator: '>', value: '0', holdFor: '0 sec'}

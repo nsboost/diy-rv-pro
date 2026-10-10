@@ -69,7 +69,8 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
         if (!Array.isArray(saved.rules) || saved.rules.length > 64 || !Array.isArray(saved.notifications) || saved.notifications.length > 100) throw new Error('Saved demo lists are invalid')
         const loadedRules = saved.rules.map(normalizeAutomationRule)
         if (new Set(loadedRules.map(rule => rule.id)).size !== loadedRules.length) throw new Error('Saved demo rule identities are duplicated')
-        if (saved.notifications.some(item => !item || typeof item.id !== 'string' || !item.id || typeof item.message !== 'string' || typeof item.read !== 'boolean')) throw new Error('Saved notifications are invalid')
+        if (saved.notifications.some(item => !item || typeof item.id !== 'string' || !item.id || item.id.length > 128 || typeof item.message !== 'string' || !item.message || item.message.length > 512 || typeof item.read !== 'boolean' || !['info','warning'].includes(item.severity) || !Number.isFinite(item.createdAt) || item.createdAt < 0 || item.createdAt > 8640000000000000 || item.ruleId !== undefined && typeof item.ruleId !== 'string')) throw new Error('Saved notifications are invalid')
+        if (new Set(saved.notifications.map(item => item.id)).size !== saved.notifications.length) throw new Error('Saved notification identities are duplicated')
         const timezone = saved.config.timezone ?? defaultConfig.timezone
         validateTimezone(timezone)
         if (saved.recoveryBackupKey && (typeof saved.recoveryBackupKey !== 'string' || !/^diy-rv-demo-recovery-[0-9a-f-]{36}$/.test(saved.recoveryBackupKey))) throw new Error('Saved recovery reference is invalid')
