@@ -138,6 +138,28 @@ void test_disabled_circuit_does_not_require_an_output_assignment(void)
     cJSON_Delete(root);
 }
 
+void test_generator_separate_stop_strategies_require_a_stop_relay(void)
+{
+    static diy_feature_config_t features;
+    feature_config_defaults(&features);
+    cJSON *root = feature_config_to_json(&features), *generator = cJSON_CreateObject();
+    cJSON_AddStringToObject(generator,"id","generator-1");
+    cJSON_AddBoolToObject(generator,"enabled",true);
+    cJSON_AddNumberToObject(generator,"startRelay",2);
+    cJSON_AddNumberToObject(generator,"stopRelay",-1);
+    cJSON_AddStringToObject(generator,"controlStrategy","three-wire");
+    cJSON_AddItemToArray(cJSON_GetObjectItemCaseSensitive(root,"generators"),generator);
+    char error[128]={0};
+    const char *strategies[]={"three-wire","momentary-start-stop"};
+    for (size_t i=0;i<sizeof(strategies)/sizeof(strategies[0]);++i) {
+        cJSON_ReplaceItemInObjectCaseSensitive(generator,"controlStrategy",cJSON_CreateString(strategies[i]));
+        TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG,feature_config_update_from_json(&features,root,error,sizeof(error)));
+    }
+    cJSON_ReplaceItemInObjectCaseSensitive(generator,"stopRelay",cJSON_CreateNumber(3));
+    TEST_ASSERT_EQUAL(ESP_OK,feature_config_update_from_json(&features,root,error,sizeof(error)));
+    cJSON_Delete(root);
+}
+
 void test_fractional_gpio_is_rejected_without_mutating_saved_profile(void)
 {
     static diy_feature_config_t features;
@@ -476,6 +498,7 @@ void app_main(void)
     RUN_TEST(test_duplicate_and_missing_device_ids_are_rejected);
     RUN_TEST(test_invalid_modes_and_fractional_schema_are_rejected);
     RUN_TEST(test_monitoring_modes_do_not_require_output_relays);
+    RUN_TEST(test_generator_separate_stop_strategies_require_a_stop_relay);
     RUN_TEST(test_fractional_gpio_is_rejected_without_mutating_saved_profile);
     RUN_TEST(test_inventory_flags_reject_non_boolean_values);
     RUN_TEST(test_controller_pump_requires_assigned_relay);

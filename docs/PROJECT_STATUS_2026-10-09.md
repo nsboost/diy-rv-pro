@@ -92,9 +92,9 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 - The frontend suite currently contains 54 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
-  contain 20 passing tests including assigned pump outputs, boolean flag validation, rule identity retention, disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
+  contain 21 passing tests including generator stop assignments, assigned pump outputs, boolean flag validation, rule identity retention, disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
   failed-execution retries. ESP32-S3 integration build passed: 77,872 bytes static
-  RAM and 992,637 bytes application flash. Runtime headroom and hardware operation
+  RAM and 992,761 bytes application flash. Runtime headroom and hardware operation
   still need bench verification.
 
 The active goal remains open until the remaining runtime/menu gaps and GitHub
@@ -220,3 +220,7 @@ Manual HVAC mode changes and Auto now check configured output interlocks rather 
 Setup now checks enabled power-device communications/sensor inputs, tank sensor types, camera URLs and security input strategies before device submission. Missing generator and controllable-circuit relay fields cannot bypass required assignments through undefined comparisons. Disabled inventory may retain incomplete assignments. An import regression test covers omitted relay fields and missing input strategies, then confirms disabling those items permits retention. All 53 frontend tests and the production build pass. Selecting a protocol still does not establish an implemented physical driver.
 
 Saved demo alerts now require unique bounded identities, bounded text, valid severity/read fields and finite supported timestamps. Duplicate or malformed entries enter the existing preserved-data recovery flow rather than loading an ambiguous inbox. Regression tests confirm invalid alerts cannot be acknowledged, automatic ticks preserve the original payload and no corrupt alert appears as a normal inbox item. All 54 frontend tests and the production build pass.
+
+October 10 CI check: GitHub runs for 6d62477, b4c2d40, ff8da74 and 09499ab completed successfully. For f3bd035, frontend passed while firmware and Windows firmware-host jobs were still in progress at observation. This does not establish terminal CI success for the newest revision.
+
+Firmware configuration now requires separate stop relays for enabled three-wire and momentary-start-stop generator strategies, matching setup validation. A host test rejects both incomplete strategies and accepts an assigned stop output. All 21 firmware host tests and the ESP32-S3 integration build pass. Generator physical control/state-machine commissioning remains unfinished.

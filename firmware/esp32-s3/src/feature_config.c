@@ -287,6 +287,12 @@ static bool validate_generator(const cJSON *generator, char *error, size_t error
         set_error(error, error_len, "Enabled generator requires a start relay");
         return false;
     }
+    if (is_enabled(generator) &&
+        (string_equals(generator, "controlStrategy", "three-wire") || string_equals(generator, "controlStrategy", "momentary-start-stop")) &&
+        !has_configured_relay(generator, "stopRelay")) {
+        set_error(error, error_len, "Generator strategy requires a stop relay");
+        return false;
+    }
     return true;
 }
 
