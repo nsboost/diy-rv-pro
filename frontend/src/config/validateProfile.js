@@ -42,6 +42,7 @@ export function validateProfile(profile) {
   const relays = new Map()
   if (profile.schemaVersion !== 1) errors.push('Unsupported configuration version')
   if (!profile.rvProfile?.name?.trim() || utf8Length(profile.rvProfile.name) > 48) errors.push('RV name must contain text using at most 48 UTF-8 bytes')
+  if (!Number.isFinite(profile.rvProfile.lengthFt) || profile.rvProfile.lengthFt < 0 || profile.rvProfile.lengthFt > 60) errors.push('RV length must be a number from 0 to 60 feet')
   for (const [section, limit] of Object.entries(sectionLimits)) {
     const items = profile[section]
     if (!Array.isArray(items)) { errors.push(`${section}: expected an inventory list`); continue }

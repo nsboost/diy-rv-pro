@@ -26,7 +26,7 @@ function TextInput({ value, onChange, type = 'text', min, max }) {
       min={min}
       max={max}
       value={value ?? ''}
-      onChange={event => onChange(type === 'number' ? Number(event.target.value) : event.target.value)}
+      onChange={event => onChange(type === 'number' && event.target.value !== '' ? Number(event.target.value) : event.target.value)}
     />
   )
 }
