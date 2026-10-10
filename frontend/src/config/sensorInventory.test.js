@@ -133,6 +133,12 @@ test('demo projection clears outputs removed from climate configuration', () => 
   let projected = projectTelemetry(snapshot,profile,1000)
   assert.equal(projected.hvacZones[0].ac,false)
   assert.deepEqual(projected.hvacZones[0].availableEquipment,['heatPump'])
+  profile.hvacZones[0].heatPumpRelay = -1
+  profile.hvacZones[0].fanRelay = 0
+  projected = projectTelemetry(snapshot,profile,1000)
+  assert.equal(projected.hvacZones[0].mode,'Off')
+  assert.equal(projected.hvacZones[0].auto,false)
+  assert.deepEqual(projected.hvacZones[0].availableEquipment,['fan'])
   profile.hvacZones[0].controlMode = 'monitor-only'
   projected = projectTelemetry(snapshot,profile,1000)
   assert.equal(projected.hvacZones[0].auto,false)
@@ -142,6 +148,7 @@ test('demo projection clears outputs removed from climate configuration', () => 
   snapshot.controller.equipmentMode = 'hardware'
   projected = projectTelemetry(snapshot,profile,1000)
   assert.equal(projected.hvacZones[0].ac,true)
+  assert.equal(projected.hvacZones[0].mode,snapshot.hvacZones[0].mode)
 })
 
 test('matching label or ID never substitutes a different hardware address', () => {

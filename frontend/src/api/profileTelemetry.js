@@ -1,4 +1,5 @@
 import { resolveTemperature } from '../config/sensorInventory.js'
+import { availableHvacModes } from '../config/hvacCapabilities.js'
 
 export function projectTelemetry(snapshot, profile, now = Date.now()) {
   const telemetry = structuredClone(snapshot)
@@ -20,6 +21,12 @@ export function projectTelemetry(snapshot, profile, now = Date.now()) {
         if (zone.controlMode !== 'controller' || !projected.availableEquipment.includes(equipment)) projected[equipment] = false
       }
       if (zone.controlMode !== 'controller') projected.auto = false
+      if (zone.controlMode === 'controller' && !availableHvacModes(projected).includes(projected.mode)) {
+        projected.mode = 'Off'
+        projected.auto = false
+        for (const equipment of ['ac','furnace','heatPump','fan']) projected[equipment] = false
+      }
+      if (!availableHvacModes(projected).includes('Auto')) projected.auto = false
     }
     return projected
   })
