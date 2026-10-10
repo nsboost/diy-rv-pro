@@ -18,6 +18,7 @@ import NotificationsPanel from './components/NotificationsPanel.jsx'
 import { demoProfile, demoReadings } from './data/demoProfile.js'
 import { projectTelemetry } from './api/profileTelemetry.js'
 import { controlSystems, sourceCatalog } from './config/automationCatalog.js'
+import { loadNotificationSettings } from './api/notificationSettings.js'
 import SetupWizard from './components/SetupWizard.jsx'
 import { defaultSystemProfile, normalizeSystemProfile } from './config/systemProfile.js'
 
@@ -916,8 +917,9 @@ export default function App() {
   const [controlError, setControlError] = useState('')
   const [nightMode, setNightMode] = useState(false)
   const [browserSettings, setBrowserSettings] = useState(() => {
-    try { return {...controller.getTelemetry().notificationSettings, ...JSON.parse(window.localStorage.getItem('diy-rv-notification-settings') || '{}')} } catch { return {inApp:true,desktop:false} }
+    try { return loadNotificationSettings(window.localStorage, controller.getTelemetry().notificationSettings) } catch { return loadNotificationSettings(null) }
   })
+  useEffect(() => { controller.setNotificationSettings(browserSettings) }, [controller, browserSettings])
   const notificationCursor = useRef({initialized:false, ids:new Set()})
   useEffect(() => {
     if (snapshot.controller.mode !== 'device') return

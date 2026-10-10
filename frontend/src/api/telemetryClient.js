@@ -4,6 +4,7 @@ import { projectTelemetry } from './profileTelemetry.js'
 import { evaluateRules, validateCondition, durationMs } from './automationEngine.js'
 import { controlSystems } from '../config/automationCatalog.js'
 import { validateProfile } from '../config/validateProfile.js'
+import { normalizeNotificationSettings } from './notificationSettings.js'
 
 const CONTROL_ENDPOINT = '/api/control'
 const CONFIG_ENDPOINT = '/api/config'
@@ -56,7 +57,7 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
         config = { ...defaultConfig, features: normalizeSystemProfile(saved.config.features) }
         telemetry.automationRules = (saved.rules || []).slice(0, 64).map(normalizeAutomationRule)
         notifications = (saved.notifications || []).slice(0, 100)
-        notificationSettings = { ...notificationSettings, ...saved.notificationSettings }
+        notificationSettings = normalizeNotificationSettings(saved.notificationSettings)
         for (const rule of telemetry.automationRules) {
           const savedState = saved.runtime?.[rule.id]
           if (savedState && !rule.action.command.startsWith('block')) runtime[rule.id] = {active: savedState.active === true, since: null}
