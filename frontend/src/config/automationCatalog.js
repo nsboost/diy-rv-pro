@@ -11,7 +11,12 @@ export function controlSystems(profile) {
     systems.push({id: 'generator', label: 'Generator', category: 'Power Generation', commands: ['start', 'stop', 'blockOn', 'unblock'], defaultCommand: 'start'})
     systems.push({id: 'generator.autoStart', label: 'Generator Auto Start', category: 'Power Generation', commands: ['turnOn', 'turnOff', 'blockOn', 'unblock'], defaultCommand: 'blockOn'})
   }
-  for (const section of ['acBreakers', 'dcCircuits', 'waterPumps', 'waterHeaters', 'inverters', 'customIo']) {
+  for (const heater of (profile.waterHeaters || []).filter(item => item.enabled && item.controlMode === 'controller')) {
+    for (const [output, relay, label] of [['acElement','acElementRelay','AC heating element'], ['dcElement','dcElementRelay','DC heating element'], ['propane','propaneRelay','Propane heat'], ['recirculation','recircPumpRelay','Recirculation pump']]) {
+      if (Number.isInteger(heater[relay]) && heater[relay] >= 0) systems.push({id:`device.waterHeaters.${heater.id}.${output}`, label:`${heater.label} · ${label}`, category:'Water Heaters', commands:['turnOn','turnOff','blockOn','blockOff','unblock'], defaultCommand:'turnOff'})
+    }
+  }
+  for (const section of ['acBreakers', 'dcCircuits', 'waterPumps', 'inverters', 'customIo']) {
     for (const item of (profile[section] || []).filter(item => item.enabled && (item.controllable || item.controlMode === 'controller'))) {
       systems.push({id: `device.${section}.${item.id}`, label: item.label, category: ({acBreakers:'AC Circuits',dcCircuits:'DC Circuits',waterPumps:'Water Pumps',waterHeaters:'Water Heaters',inverters:'Power Conversion',customIo:'Custom I/O'})[section],
         commands: ['acBreakers', 'dcCircuits'].includes(section) ? ['open', 'close', 'blockOn', 'unblock'] : ['turnOn', 'turnOff', 'blockOn', 'blockOff', 'unblock'], defaultCommand: ['acBreakers', 'dcCircuits'].includes(section) ? 'open' : 'turnOff'})

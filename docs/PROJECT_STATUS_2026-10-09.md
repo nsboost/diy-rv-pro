@@ -89,7 +89,7 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
   runtime. Temperature-based alerts run in a background task. Physical equipment
   drivers, other source values, time synchronization and hardware bench checks
   remain incomplete; equipment prototype simulation is labeled explicitly.
-- The frontend suite currently contains 37 passing tests, including malformed
+- The frontend suite currently contains 39 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
   contain 18 passing tests including rule identity retention, disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
@@ -174,6 +174,13 @@ Demo climate projection now clears outputs no longer assigned to a relay and
 auto-control state when a zone becomes monitor-only. Physical telemetry is
 preserved; this configuration cleanup does not claim a hardware switch occurred.
 The regression is covered in the 37-test frontend suite and the build passes.
+
+Water-heater automation targets now identify each assigned AC/DC element,
+propane output or recirculation pump separately. Unassigned channels and
+monitor-only heaters are omitted. Old generic heater targets need explicit
+selection of a channel; no heating channel is guessed. A simulation regression
+verifies selecting AC heat leaves propane and recirculation untouched. The 39
+frontend tests and production build pass; physical heater drivers remain pending.
 
 Stored notification recovery now validates the version, bounded field types,
 unique alert identities and nonnegative timestamps before publishing the state.

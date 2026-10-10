@@ -108,6 +108,20 @@ test('adding demo power equipment restores simulated values after unconfigured p
   assert.equal(after.controller.mode,'simulation')
 })
 
+test('demo water heater automation changes only the selected output', () => {
+  const profile = structuredClone(demoProfile)
+  profile.waterHeaters=[{id:'heater-1',label:'Water heater',enabled:true,controlMode:'controller',acElementRelay:4,dcElementRelay:-1,propaneRelay:5,recircPumpRelay:6}]
+  const controller=createLocalController(cloneTelemetry(),{initialProfile:profile})
+  controller.dispatch({type:'automation.upsert',rule:{id:'heater-rule',name:'Heat water',enabled:true,
+    trigger:{source:'temperature.demo-temp-1.tempF',operator:'>',value:'70',holdFor:'0 sec'},
+    action:{type:'state',target:'device.waterHeaters.heater-1.acElement',command:'turnOn'},reverse:{enabled:false}}})
+  controller.setReadings(demoReadings(1000))
+  const snapshot=controller.tick(1000)
+  assert.equal(snapshot.outputStates['device.waterHeaters.heater-1.acElement'],true)
+  assert.equal(snapshot.outputStates['device.waterHeaters.heater-1.propane'],undefined)
+  assert.equal(snapshot.outputStates['device.waterHeaters.heater-1.recirculation'],undefined)
+})
+
 test('browser alerts work independently of in-app notification preference', () => {
   const original = globalThis.Notification
   const delivered = []
