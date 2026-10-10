@@ -2,6 +2,22 @@
 
 This document records the initial review. The implementation update below supersedes the initial counts and fixed gaps.
 
+## Latest verified state - October 10, 2026
+
+- Local frontend: 76 tests pass; production build passes. Bundle size warning remains.
+- Local firmware: 23 host tests pass; ESP32-S3 build passes at a7cb450.
+  Static RAM is 77,872 bytes; application flash is 993,657 bytes.
+- GitHub CI run [38046143804](https://github.com/nsboost/diy-rv-pro/actions/runs/38046143804)
+  for a7cb450: frontend succeeded; firmware and Windows host tests were still running at inspection.
+- Addressed temperatures and contact sources are connected to automation logic.
+  Contact comparisons now agree between editor validation and firmware execution.
+- Hardware equipment actions still lack commissioned output drivers. HVAC/generator
+  state machines, other physical source drivers, reboot activation persistence,
+  and full live-controller browser/fault verification remain incomplete.
+- Notification delivery is in-app and browser only; browser delivery requires
+  permission and an open dashboard. No background push service is implemented.
+- The folder review below is the historical October 9 snapshot, not current Git state.
+
 ## Overall state
 
 The active working directory is `C:\Users\Remote\Documents\New project`.
@@ -89,10 +105,10 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
   runtime. Temperature-based alerts run in a background task. Physical equipment
   drivers, other source values, time synchronization and hardware bench checks
   remain incomplete; equipment prototype simulation is labeled explicitly.
-- The frontend suite currently contains 56 passing tests, including malformed
+- The frontend suite currently contains 76 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
-  contain 21 passing tests including generator stop assignments, assigned pump outputs, boolean flag validation, rule identity retention, disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
+  contain 23 passing tests including generator stop assignments, assigned pump outputs, boolean flag validation, rule identity retention, disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
   failed-execution retries. ESP32-S3 integration build passed: 77,872 bytes static
   RAM and 992,961 bytes application flash. Runtime headroom and hardware operation
   still need bench verification.
