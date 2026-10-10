@@ -175,7 +175,7 @@ function MobileNavDrawer({ telemetry, activeSection, open, onClose, onSelect }) 
 
   return (
     <div className="mobile-drawer-backdrop" role="presentation" onMouseDown={event => {
-      if (event.target === event.currentTarget) {
+      if (!busy && event.target === event.currentTarget) {
         onClose()
       }
     }}>
@@ -271,17 +271,17 @@ function MetricCard({ title, children, icon, accent = 'green' }) {
   )
 }
 
-function Modal({ title, children, onClose }) {
+function Modal({ title, children, onClose, busy = false }) {
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={event => {
       if (event.target === event.currentTarget) {
         onClose()
       }
     }}>
-      <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <section className="modal-panel" role="dialog" aria-modal="true" aria-busy={busy} aria-labelledby="modal-title">
         <div className="modal-heading">
           <h2 id="modal-title">{title}</h2>
-          <button className="icon-button modal-close" aria-label="Close dialog" onClick={onClose} type="button">x</button>
+          <button className="icon-button modal-close" aria-label="Close dialog" disabled={busy} onClick={onClose} type="button">x</button>
         </div>
         {children}
       </section>
@@ -312,7 +312,7 @@ function HvacSettingsDialog({ zone, onClose, onSave }) {
   const update = (key, value) => setDraft(current => ({ ...current, [key]: value }))
 
   return (
-    <Modal title={`${zone.name} Settings`} onClose={onClose}>
+    <Modal title={`${zone.name} Settings`} onClose={onClose} busy={saving}>
       <form className="settings-form" onSubmit={async event => {
         event.preventDefault()
         if (saving) return
@@ -347,7 +347,7 @@ function HvacSettingsDialog({ zone, onClose, onSave }) {
         </div>
         {error && <p className="config-error" role="alert">{error}</p>}
         <div className="modal-actions">
-          <button className="secondary-action" type="button" onClick={onClose}>Cancel</button>
+          <button className="secondary-action" type="button" disabled={saving} onClick={onClose}>Cancel</button>
           <button className="primary-action" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save HVAC Settings'}</button>
         </div>
       </form>
@@ -504,7 +504,7 @@ function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile }) {
   }
 
   return (
-    <Modal title={rule ? 'Edit Automation' : 'Create Automation'} onClose={onClose}>
+    <Modal title={rule ? 'Edit Automation' : 'Create Automation'} onClose={onClose} busy={Boolean(pendingOperation)}>
       <form className="settings-form automation-editor" onSubmit={async event => {
         event.preventDefault()
         if (pendingOperation) return
@@ -651,7 +651,7 @@ function AutomationRuleDialog({ rule, onClose, onSave, onDelete, profile }) {
             try {await onDelete(rule.id)} catch (error) {setError(error.message)} finally {setPendingOperation('')}
           }}>{pendingOperation === 'delete' ? 'Deleting...' : 'Delete'}</button>}
           <span />
-          <button className="secondary-action" type="button" onClick={onClose}>Cancel</button>
+          <button className="secondary-action" type="button" disabled={Boolean(pendingOperation)} onClick={onClose}>Cancel</button>
           <button className="primary-action" type="submit" disabled={Boolean(pendingOperation)}>{pendingOperation === 'save' ? 'Saving...' : 'Save Automation'}</button>
         </div>
       </form>

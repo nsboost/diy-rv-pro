@@ -323,3 +323,7 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 ### Controller credential replacement (October 10)
 - Sign-in writes the new credential before clearing its previous persistence scope. It snapshots both stores and restores them if writing or clearing fails; unavailable storage prevents changes. A failed rollback produces explicit cleanup guidance rather than claiming sign-in succeeded.
 - Validation: 84 frontend tests passed, including failed writes, failed cleanup, unavailable storage, persistence-scope selection, and failed rollback. Production build passed before the additional test-only rollback case. Actual controller authentication remains hardware-dependent and was not exercised by this change.
+
+### Pending settings dialogs (October 10)
+- Automation save/delete and HVAC save now keep their dialogs open while awaiting completion. Cancel, close, and backdrop dismissal are disabled during the operation, retaining visible failure feedback. Dialogs announce their busy state for assistive technology.
+- Validation: 84 frontend tests passed and production build passed. Browser smoke check confirmed the populated automation editor opens and idle Cancel closes it, with no browser errors. A delayed physical-controller operation was not exercised; pending dismissal behavior is currently verified by implementation inspection rather than a live device test.
