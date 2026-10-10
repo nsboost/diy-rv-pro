@@ -40,6 +40,12 @@ const automationCommandTypes = new Set([
   'sendAlert'
 ])
 
+function validateTimezone(value) {
+  if (typeof value !== 'string' || !value || value.length > 39) throw new Error('Enter a valid time zone such as America/Denver')
+  try { new Intl.DateTimeFormat('en-US', {timeZone:value}) }
+  catch { throw new Error('Enter a valid time zone such as America/Denver') }
+}
+
 export function createLocalController(seed = cloneTelemetry(), { storage, initialProfile = defaultSystemProfile } = {}) {
   const demoBaseline = structuredClone(seed)
   let telemetry = seed
@@ -64,7 +70,11 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
         const loadedRules = saved.rules.map(normalizeAutomationRule)
         if (new Set(loadedRules.map(rule => rule.id)).size !== loadedRules.length) throw new Error('Saved demo rule identities are duplicated')
         if (saved.notifications.some(item => !item || typeof item.id !== 'string' || !item.id || typeof item.message !== 'string' || typeof item.read !== 'boolean')) throw new Error('Saved notifications are invalid')
-        config = { ...defaultConfig, features: normalizeSystemProfile(saved.config.features) }
+        const timezone = saved.config.timezone ?? defaultConfig.timezone
+        validateTimezone(timezone)
+        if (saved.recoveryBackupKey && (typeof saved.recoveryBackupKey !== 'string' || !/^diy-rv-demo-recovery-[0-9a-f-]{36}$/.test(saved.recoveryBackupKey))) throw new Error('Saved recovery reference is invalid')
+        config = { ...defaultConfig, timezone, features: normalizeSystemProfile(saved.config.features) }
+        recoveryBackupKey = saved.recoveryBackupKey || ''
         telemetry.automationRules = loadedRules
         notifications = saved.notifications
         notificationSettings = normalizeNotificationSettings(saved.notificationSettings)
@@ -86,10 +96,11 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
     try {
       if (recoveryRequired) {
         if (recoveryPayload === null) throw new Error('Saved data could not be read')
-        if (!recoveryBackupKey) recoveryBackupKey = `diy-rv-demo-recovery-${crypto.randomUUID()}`
-        storage.setItem(recoveryBackupKey, recoveryPayload)
+        const backupKey = recoveryBackupKey || `diy-rv-demo-recovery-${crypto.randomUUID()}`
+        storage.setItem(backupKey, recoveryPayload)
+        recoveryBackupKey = backupKey
       }
-      const payload = JSON.stringify({ version: 2, config, rules: telemetry.automationRules, notifications, notificationSettings, runtime })
+      const payload = JSON.stringify({ version: 2, config, rules: telemetry.automationRules, notifications, notificationSettings, runtime, recoveryBackupKey })
       if (payload !== persistedPayload) storage.setItem('diy-rv-demo-v2', payload)
       recoveryRequired = false
       persistedPayload = payload; storageError = ''; return true
@@ -141,6 +152,7 @@ export function createLocalController(seed = cloneTelemetry(), { storage, initia
       return structuredClone(config)
     },
     updateConfig(nextConfig) {
+      if (nextConfig.timezone !== undefined) validateTimezone(nextConfig.timezone)
       const features = normalizeSystemProfile(nextConfig.features || config.features)
       const issues = validateProfile(features)
       if (issues.length) throw new Error(issues.join('; '))

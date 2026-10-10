@@ -136,13 +136,29 @@ test('corrupt saved demo data survives ticks and recovery requires a successful 
     assert.equal(values.get('diy-rv-demo-v2'),payload)
     assert.throws(() => controller.updateConfig(controller.getConfig()), /could not be saved/)
     assert.equal(values.get('diy-rv-demo-v2'),payload)
+    assert.equal(controller.getTelemetry().recoveryBackupKey,'')
     failBackup = false
     controller.updateConfig(controller.getConfig())
     const key = controller.getTelemetry().recoveryBackupKey
     assert.equal(values.get(key),payload)
     assert.equal(JSON.parse(values.get('diy-rv-demo-v2')).version,2)
-    assert.deepEqual(createLocalController(cloneTelemetry(), {storage}).getTelemetry().automationRules,[])
+    const restored = createLocalController(cloneTelemetry(), {storage})
+    assert.deepEqual(restored.getTelemetry().automationRules,[])
+    assert.equal(restored.getTelemetry().recoveryBackupKey,key)
   }
+})
+
+test('saved local time zone survives reload and invalid zones cannot break scheduling', () => {
+  const values = new Map()
+  const storage = {getItem:key => values.get(key) ?? null,setItem:(key,value) => values.set(key,value)}
+  const controller = createLocalController(cloneTelemetry(), {storage,initialProfile:demoProfile})
+  controller.updateConfig({...controller.getConfig(),timezone:'America/New_York'})
+  const restored = createLocalController(cloneTelemetry(), {storage})
+  assert.equal(restored.getConfig().timezone,'America/New_York')
+  const now = Date.UTC(2026,0,1,12)
+  assert.equal(restored.tick(now).localMinute,420)
+  for (const timezone of ['',null,42,'Invalid/Zone']) assert.throws(() => restored.updateConfig({timezone}), /valid time zone/)
+  assert.equal(restored.getConfig().timezone,'America/New_York')
 })
 
 test('blocking rule prevents generator action irrespective of rule ordering', () => {
