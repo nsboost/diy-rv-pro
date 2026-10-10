@@ -116,7 +116,7 @@ function ItemFields({ sectionId, item, updateItem, profile }) {
           <SelectInput value={item.sensorType} options={optionSets.sensorTypes} onChange={value => updateItem('sensorType', value)} />
         </Field>
         <NumberInput label={sectionId === 'batteries' ? 'Capacity Ah' : 'Max Current A'} value={sectionId === 'batteries' ? item.capacityAh : item.maxCurrentA} onChange={value => updateItem(sectionId === 'batteries' ? 'capacityAh' : 'maxCurrentA', value)} min={0} max={sectionId === 'batteries' ? 2000 : 500} />
-        <NumberInput label="ADC" value={item.adcChannel} onChange={value => updateItem('adcChannel', value)} max={48} />
+        <NumberInput label="ADC GPIO" value={item.adcChannel} onChange={value => updateItem('adcChannel', value)} max={48} />
         <NumberInput label="Sense GPIO" value={item.senseGpio} onChange={value => updateItem('senseGpio', value)} max={48} />
       </>
     )
@@ -177,7 +177,7 @@ function ItemFields({ sectionId, item, updateItem, profile }) {
           <SelectInput value={item.sensorType} options={optionSets.sensorTypes} onChange={value => updateItem('sensorType', value)} />
         </Field>
         <NumberInput label="Capacity Gal" value={item.capacityGal} onChange={value => updateItem('capacityGal', value)} min={0} max={500} />
-        <NumberInput label="ADC" value={item.adcChannel} onChange={value => updateItem('adcChannel', value)} max={48} />
+        <NumberInput label="ADC GPIO" value={item.adcChannel} onChange={value => updateItem('adcChannel', value)} max={48} />
         <NumberInput label="Empty mV" value={item.emptyMv} onChange={value => updateItem('emptyMv', value)} min={0} max={3300} />
         <NumberInput label="Full mV" value={item.fullMv} onChange={value => updateItem('fullMv', value)} min={0} max={3300} />
       </>

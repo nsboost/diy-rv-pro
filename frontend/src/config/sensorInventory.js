@@ -60,7 +60,7 @@ export function validateSensorInventory(profile) {
   }
   for (const section of Object.keys(profile).filter(key => Array.isArray(profile[key]) && key !== 'temperatureBuses')) {
     for (const item of profile[section].filter(item => item.enabled)) {
-      for (const key of ['gpio', 'senseGpio', 'tempSensorGpio', 'runSenseGpio', 'rpmInputGpio', 'tamperGpio']) {
+      for (const key of ['gpio', 'adcChannel', 'senseGpio', 'tempSensorGpio', 'runSenseGpio', 'rpmInputGpio', 'tamperGpio']) {
         if (item[key] >= 0 && pins.has(item[key])) errors.push(`${item.label}: ${key} conflicts with a temperature bus`)
       }
     }

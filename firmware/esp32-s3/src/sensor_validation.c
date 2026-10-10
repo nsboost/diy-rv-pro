@@ -55,7 +55,7 @@ bool sensor_inventory_validate(const cJSON *root, char *error, size_t len) {
             const cJSON *other_pin = cJSON_GetObjectItemCaseSensitive(other, "gpio");
             if (other != bus && enabled(other) && cJSON_IsNumber(other_pin) && other_pin->valueint == pin->valueint) return fail(error, len, "Temperature buses cannot share a GPIO");
         }
-        const char *keys[] = {"gpio", "senseGpio", "tempSensorGpio", "runSenseGpio", "rpmInputGpio", "tamperGpio"};
+        const char *keys[] = {"gpio", "adcChannel", "senseGpio", "tempSensorGpio", "runSenseGpio", "rpmInputGpio", "tamperGpio"};
         const cJSON *section = NULL;
         cJSON_ArrayForEach(section, root) {
             if (!cJSON_IsArray(section) || section == buses) continue;

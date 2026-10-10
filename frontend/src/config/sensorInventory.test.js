@@ -51,6 +51,14 @@ test('bad ROM CRC, duplicate address, missing references and pin conflicts are r
   assert.ok(errors.some(error => error.includes('conflicts with a temperature bus')))
 })
 
+test('an analog input cannot share the temperature bus GPIO', () => {
+  const profile = structuredClone(demoProfile)
+  profile.waterTanks[0].adcChannel = profile.temperatureBuses[0].gpio
+  assert.ok(validateProfile(profile).some(error => error.includes('adcChannel conflicts')))
+  profile.waterTanks[0].enabled = false
+  assert.ok(!validateProfile(profile).some(error => error.includes('adcChannel conflicts')))
+})
+
 test('matching label or ID never substitutes a different hardware address', () => {
   const readings = demoReadings(1000)
   readings[0].address = readings[1].address

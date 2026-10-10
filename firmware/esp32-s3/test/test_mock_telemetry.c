@@ -239,6 +239,11 @@ void test_addressed_temperature_inventory(void)
     cJSON_ReplaceItemInObjectCaseSensitive(zone, "temperatureSensorId", cJSON_CreateString("missing"));
     TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG, feature_config_update_from_json(&features, root, error, sizeof(error)));
     cJSON_ReplaceItemInObjectCaseSensitive(zone, "temperatureSensorId", cJSON_CreateString("bedroom"));
+    cJSON *tank=cJSON_Parse("{\"id\":\"tank-1\",\"label\":\"Fresh\",\"enabled\":true,\"sensorType\":\"analog\",\"adcChannel\":4}");
+    cJSON_AddItemToArray(cJSON_GetObjectItemCaseSensitive(root,"waterTanks"),tank);
+    TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG,feature_config_update_from_json(&features,root,error,sizeof(error)));
+    cJSON_ReplaceItemInObjectCaseSensitive(tank,"enabled",cJSON_CreateBool(false));
+    TEST_ASSERT_EQUAL(ESP_OK,feature_config_update_from_json(&features,root,error,sizeof(error)));
     cJSON *duplicate = cJSON_Duplicate(sensor, true);
     cJSON_ReplaceItemInObjectCaseSensitive(duplicate, "id", cJSON_CreateString("second-probe"));
     cJSON_AddItemToArray(cJSON_GetObjectItemCaseSensitive(root, "temperatureZones"), duplicate);

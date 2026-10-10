@@ -89,7 +89,7 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
   runtime. Temperature-based alerts run in a background task. Physical equipment
   drivers, other source values, time synchronization and hardware bench checks
   remain incomplete; equipment prototype simulation is labeled explicitly.
-- The frontend suite currently contains 34 passing tests, including malformed
+- The frontend suite currently contains 35 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
   contain 17 passing tests including disabled circuit configuration, time-zone rules, saved-state validation, zone-to-sensor mapping, clock comparisons, hold resets, recovery and
@@ -151,6 +151,12 @@ switch: watching, holding, triggered, unavailable input or pending action retry.
 Firmware telemetry includes per-rule runtime state. The live browser shows the
 sensor alert as triggered and unconfigured battery/solar sources waiting for
 valid input. The frontend suite (34) and firmware host suite (17) pass.
+
+Temperature bus GPIO conflict checks now include enabled analog inputs in
+frontend and firmware. Setup labels the existing `adcChannel` field as ADC GPIO
+so users enter the physical pin rather than a peripheral channel index. Disabled
+equipment does not reserve the pin. The 35-test frontend suite and 17 firmware
+host tests cover the overlap and disabled-equipment exception.
 
 Stored notification recovery now validates the version, bounded field types,
 unique alert identities and nonnegative timestamps before publishing the state.
