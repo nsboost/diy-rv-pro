@@ -92,11 +92,18 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 - The frontend suite currently contains 30 passing tests, including malformed
   inventory imports, HH:MM clock comparisons and independent in-app/browser
   notification preferences. Firmware host tests
-  contain 12 passing tests including hold resets, recovery and failed-execution
-  retries. ESP32-S3 integration build passes: 76,416 bytes static RAM and 956,925 bytes application flash. Runtime headroom and hardware operation still need bench verification.
+  contain 13 passing tests including clock comparisons, hold resets, recovery and
+  failed-execution retries. ESP32-S3 integration build passes: 76,416 bytes static
+  RAM and 957,189 bytes application flash. Runtime headroom and hardware operation
+  still need bench verification.
 
 The active goal remains open until the remaining runtime/menu gaps and GitHub
 reconciliation are verified. No government security compliance or hardware
 commissioning is claimed.
 
 Controller Settings now includes connection, session-token storage, optional browser remembering, sign-out and first-boot/network configuration forms. The forms render in the browser; an actual device pairing run remains unverified.
+
+The firmware clock comparison syntax now matches the browser (`HH:MM`). Clock
+sources still require synchronization before schedules can run on the controller.
+The Wi-Fi station setup currently sets credentials but lacks connection/reconnect
+event handling; that configuration workflow remains incomplete.

@@ -263,6 +263,29 @@ static void test_automation_hold_fault_reset_restore_and_retry(void) {
     TEST_ASSERT_EQUAL(3,executions); TEST_ASSERT_TRUE(last_restoring); TEST_ASSERT_FALSE(engine.rules[0].active);
     automation_engine_reset(&engine); cJSON_Delete(rules); cJSON_Delete(sources);
 }
+static void test_automation_clock_comparisons(void) {
+    char error[96]; cJSON *rules=temperature_rules();
+    cJSON *rule=cJSON_GetArrayItem(rules,0), *trigger=cJSON_GetObjectItemCaseSensitive(rule,"trigger");
+    cJSON_ReplaceItemInObjectCaseSensitive(trigger,"source",cJSON_CreateString("time.local"));
+    cJSON_ReplaceItemInObjectCaseSensitive(trigger,"value",cJSON_CreateString("06:30"));
+    cJSON_ReplaceItemInObjectCaseSensitive(trigger,"holdFor",cJSON_CreateString("0 sec"));
+    cJSON_ReplaceItemInObjectCaseSensitive(cJSON_GetObjectItemCaseSensitive(rule,"reverse"),"enabled",cJSON_CreateBool(false));
+    const char *operators[]={"=","!=",">",">=","<","<="};
+    const int minutes[]={390,391,391,390,389,390};
+    for (int i=0;i<6;i++) {
+        automation_engine_t engine={0}; cJSON *sources=cJSON_CreateObject();
+        cJSON_ReplaceItemInObjectCaseSensitive(trigger,"operator",cJSON_CreateString(operators[i]));
+        TEST_ASSERT_TRUE(automation_validate_rules(rules,error,sizeof(error)));
+        cJSON_AddNumberToObject(sources,"time.local",minutes[i]);
+        executions=0; allow_execution=true;
+        automation_engine_tick(&engine,rules,sources,1000,execute_test_rule,NULL);
+        TEST_ASSERT_EQUAL(1,executions);
+        automation_engine_reset(&engine); cJSON_Delete(sources);
+    }
+    cJSON_ReplaceItemInObjectCaseSensitive(trigger,"value",cJSON_CreateString("25:00"));
+    TEST_ASSERT_FALSE(automation_validate_rules(rules,error,sizeof(error)));
+    cJSON_Delete(rules);
+}
 static void test_automation_rejects_invalid_rules(void) {
     char error[96]; cJSON *rules=temperature_rules();
     cJSON *rule=cJSON_GetArrayItem(rules,0), *trigger=cJSON_GetObjectItemCaseSensitive(rule,"trigger");
@@ -282,6 +305,7 @@ void app_main(void)
     UNITY_BEGIN();
     RUN_TEST(test_automation_hold_fault_reset_restore_and_retry);
     RUN_TEST(test_automation_rejects_invalid_rules);
+    RUN_TEST(test_automation_clock_comparisons);
     RUN_TEST(test_addressed_temperature_inventory);
     RUN_TEST(test_contact_filter_requires_stable_samples);
     RUN_TEST(test_duplicate_and_missing_device_ids_are_rejected);

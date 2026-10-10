@@ -47,6 +47,23 @@ static bool duration(const char *text, double *milliseconds) {
   *milliseconds = amount * scale;
   return *milliseconds <= 86400000;
 }
+static bool clock_minute(const char *value, double *minute) {
+  if (strlen(value) != 5 || value[2] != ':' || value[0] < '0' ||
+      value[0] > '9' || value[1] < '0' || value[1] > '9' || value[3] < '0' ||
+      value[3] > '9' || value[4] < '0' || value[4] > '9')
+    return false;
+  int hour = (value[0] - '0') * 10 + value[1] - '0';
+  int min = (value[3] - '0') * 10 + value[4] - '0';
+  if (hour > 23 || min > 59)
+    return false;
+  *minute = hour * 60 + min;
+  return true;
+}
+static bool expected_number(const cJSON *condition, double *value) {
+  return !strcmp(str(condition, "source"), "time.local")
+             ? clock_minute(str(condition, "value"), value)
+             : number(str(condition, "value"), value);
+}
 static bool range(const cJSON *condition, double *low, double *high) {
   const char *value = str(condition, "value");
   if (!strcmp(str(condition, "source"), "time.local")) {
@@ -75,11 +92,14 @@ static bool condition_valid(const cJSON *condition) {
     return false;
   if (!strcmp(op, "between") || !strcmp(op, "outside"))
     return range(condition, &a, &b);
+  if (!strcmp(str(condition, "source"), "time.local") &&
+      !clock_minute(str(condition, "value"), &a))
+    return false;
   if (!strcmp(op, "=") || !strcmp(op, "!="))
     return true;
   return (!strcmp(op, ">") || !strcmp(op, ">=") || !strcmp(op, "<") ||
           !strcmp(op, "<=")) &&
-         number(str(condition, "value"), &a);
+         expected_number(condition, &a);
 }
 static bool action_valid(const cJSON *action, bool restoring) {
   if (!cJSON_IsObject(action) || !bounded(action, "target", 1, 128))
@@ -188,13 +208,13 @@ static bool compare(const cJSON *condition, const cJSON *value,
     if (!truth && !falsity)
       return false;
     equal = cJSON_IsTrue(value) == truth;
-  } else if (cJSON_IsNumber(value) && number(expected, &wanted))
+  } else if (cJSON_IsNumber(value) && expected_number(condition, &wanted))
     equal = value->valuedouble == wanted;
   if (!strcmp(op, "="))
     return equal;
   if (!strcmp(op, "!="))
     return !equal;
-  if (!cJSON_IsNumber(value) || !number(expected, &wanted))
+  if (!cJSON_IsNumber(value) || !expected_number(condition, &wanted))
     return false;
   if (!strcmp(op, ">"))
     return value->valuedouble > wanted;
