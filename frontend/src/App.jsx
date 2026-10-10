@@ -934,7 +934,7 @@ export default function App() {
   const controller = useMemo(() => createLocalController(undefined, {storage: import.meta.env.DEV ? window.localStorage : undefined, initialProfile: import.meta.env.DEV ? demoProfile : defaultSystemProfile}), [])
   const [snapshot, setTelemetry] = useState(() => {
     const seed = controller.getTelemetry()
-    return import.meta.env.DEV ? seed : {...seed, automationRules:[],events:[],powerHistory:[],controller:{...seed.controller,mode:'device',online:false,firmware:'Unavailable',uptime:'Unavailable',localIp:'Unavailable',alerts:0},wifi:{mode:'Unavailable',ssid:'',strength:'Unavailable',rssi:null}}
+    return import.meta.env.DEV ? seed : {...seed, shorePower:{connected:null,voltage:null,current:null,quality:'Unavailable'}, automationRules:[],events:[],powerHistory:[],controller:{...seed.controller,mode:'device',online:false,firmware:'Unavailable',uptime:'Unavailable',localIp:'Unavailable',alerts:0},wifi:{mode:'Unavailable',ssid:'',strength:'Unavailable',rssi:null}}
   })
   const [apiOnline, setApiOnline] = useState(false)
   const [activeSection, setActiveSection] = useState('dashboard')
@@ -945,6 +945,8 @@ export default function App() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [systemProfile, setSystemProfile] = useState(() => controller.getConfig().features)
   const [controlError, setControlError] = useState('')
+  const [telemetryError, setTelemetryError] = useState('')
+  const controllerSeen = useRef(false)
   const [nightMode, setNightMode] = useState(false)
   const [demoBackup, setDemoBackup] = useState(() => { try {return JSON.parse(window.localStorage.getItem('diy-rv-demo-inventory-backup') || 'null')} catch {return null} })
   const [browserSettings, setBrowserSettings] = useState(() => {
@@ -998,11 +1000,16 @@ export default function App() {
           snapshot.securityInputs = mapSecurityInputs(contacts?.sensors, confirmedProfile.securitySensors, contactsStartedAt)
         }
         if (!cancelled) {
+          controllerSeen.current = true
+          setTelemetryError('')
           setTelemetry({ ...snapshot, controller: { ...snapshot.controller, mode: 'device', online: true } })
           setApiOnline(true)
         }
-      } catch {
+      } catch (error) {
         if (!cancelled) {
+          if (controllerSeen.current || !import.meta.env.DEV) {
+            setTelemetryError(`Controller refresh failed: ${error.message || 'The controller could not be reached.'} Displayed readings may be outdated; controls are unavailable until reconnection.`)
+          }
           setApiOnline(false)
           setTelemetry(current => current.controller.mode === 'simulation' || import.meta.env.DEV && current.controller.mode !== 'device' ? current : ({ ...current, controller: { ...current.controller, online: false, mode: 'device' } }))
         }
@@ -1322,6 +1329,7 @@ export default function App() {
         <MobileHeader telemetry={telemetry} onOpenMenu={() => setMobileNavOpen(true)} />
         <TopBar telemetry={telemetry} onSelect={selectSection} onNightMode={() => setNightMode(current => !current)} />
         {controlError && <p role="alert" className="configuration-issues">{controlError}</p>}
+        {telemetryError && <p role="alert" className="configuration-issues">{telemetryError}</p>}
         {telemetry.storageError && <p role="alert" className="configuration-issues">{telemetry.storageError}</p>}
         {snapshot.controller.mode === 'simulation' && (snapshot.recoveryRequired || snapshot.recoveryBackupKey) && <button type="button" className="secondary-action" onClick={() => {
           try {
