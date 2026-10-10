@@ -423,3 +423,7 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 ### Rendered telemetry scalar validation (October 10)
 - Telemetry boundary validation checks known card text fields for string type and known numeric readings for finite numbers or explicit null. Object-valued labels/messages and coerced numeric strings are rejected before render. Optional omitted fields remain compatible with firmware-derived UI summaries.
 - All 97 frontend tests and the production build passed. Regression covers object text, list text, numeric strings and nonfinite readings. Validation remains scoped to known fields; live malformed-response browser testing is pending.
+
+### Strict telemetry state flags (October 10)
+- Known connection, generator, HVAC, rule enablement, acknowledgement and runtime state flags now require actual booleans when supplied. Truthy strings/numbers cannot masquerade as connected/running/read state. Contact active values permit explicit null for unavailable state but reject coerced booleans.
+- All 98 frontend tests and production build passed. Regression preserves false and unknown contact values while rejecting malformed flags. Live malformed-controller browser testing remains pending.

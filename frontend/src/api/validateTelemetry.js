@@ -14,24 +14,32 @@ export function validateTelemetry(value) {
   }
   if (value.ruleRuntime !== undefined && !object(value.ruleRuntime)) reject()
   if (value.storageError !== undefined && typeof value.storageError !== 'string') reject()
-  const fields = (record, strings = [], numbers = []) => {
+  const fields = (record, strings = [], numbers = [], booleans = []) => {
     for (const key of strings) if (record[key] !== undefined && typeof record[key] !== 'string') reject()
     for (const key of numbers) if (record[key] !== undefined && record[key] !== null && !Number.isFinite(record[key])) reject()
+    for (const key of booleans) if (record[key] !== undefined && typeof record[key] !== 'boolean') reject()
   }
-  fields(value.controller,['name','firmware','uptime','localIp'],['alerts'])
+  fields(value.controller,['name','firmware','uptime','localIp'],['alerts'],['online'])
   fields(value.wifi,['mode','ssid','strength'],['rssi'])
   fields(value.time,['display','date'],['localMinute'])
   fields(value.battery,['status'],['voltage','current','stateOfCharge','temperatureF'])
   fields(value.solar,[],['watts','voltage','current','todayKwh'])
   fields(value.loads,[],['watts','voltage','current','totalKwh'])
-  fields(value.shorePower,['quality'],['voltage','current'])
+  fields(value.shorePower,['quality'],['voltage','current'],['connected'])
   fields(value.inverter,['mode'],['voltage','frequencyHz','efficiency'])
   fields(value.weather,['summary'],['temperatureF','highF','lowF','humidity','windMph'])
-  fields(value.generator,['fuelType','startMethod','nextStart'],['runHours'])
-  for (const item of value.hvacZones) fields(item,['id','name','mode','sensorLabel'],['tempF','setpointF','coolSetpointF','heatSetpointF','autoDifferentialF','sensorOffsetF'])
+  fields(value.generator,['fuelType','startMethod','nextStart'],['runHours'],['running','autoStart'])
+  for (const item of value.hvacZones) fields(item,['id','name','mode','sensorLabel'],['tempF','setpointF','coolSetpointF','heatSetpointF','autoDifferentialF','sensorOffsetF'],['ac','furnace','heatPump','fan','auto'])
   for (const item of value.events) fields(item,['time','type','message'])
   for (const item of value.tanks) fields(item,['name','label','unit'],['level','capacity','gallons'])
-  for (const item of value.automationRules) fields(item,['id','name','detail'])
-  for (const item of value.notifications || []) fields(item,['id','message','severity','ruleId'],['createdAt','uptimeMs'])
+  for (const item of value.automationRules) fields(item,['id','name','detail'],[],['enabled'])
+  for (const item of value.notifications || []) fields(item,['id','message','severity','ruleId'],['createdAt','uptimeMs'],['read'])
+  for (const state of Object.values(value.ruleRuntime || {})) {
+    if (!object(state)) reject()
+    fields(state,['error'],[],['active','holding','sourceAvailable'])
+  }
+  for (const item of value.securityInputs || []) {
+    if (item.active !== undefined && item.active !== null && typeof item.active !== 'boolean') reject()
+  }
   return value
 }

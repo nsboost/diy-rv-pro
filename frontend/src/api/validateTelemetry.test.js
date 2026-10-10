@@ -29,3 +29,21 @@ test('rendered text and numeric readings reject objects and coerced numbers', ()
   value.events[0].message={text:'bad'}
   assert.throws(()=>validateTelemetry(value),/invalid telemetry/)
 })
+
+test('telemetry flags reject truthy coercions while retaining false and unknown contacts', () => {
+  for (const [section,key] of [['shorePower','connected'],['generator','running'],['generator','autoStart']]) {
+    const value=structuredClone(initialTelemetry)
+    value[section][key]='false'
+    assert.throws(()=>validateTelemetry(value),/invalid telemetry/)
+    value[section][key]=false
+    assert.equal(validateTelemetry(value),value)
+  }
+  const value=structuredClone(initialTelemetry)
+  value.notifications=[{id:'alert',read:'false'}]
+  assert.throws(()=>validateTelemetry(value),/invalid telemetry/)
+  value.notifications[0].read=false
+  value.securityInputs=[{id:'door',active:null}]
+  assert.equal(validateTelemetry(value),value)
+  value.ruleRuntime={rule:{active:'false'}}
+  assert.throws(()=>validateTelemetry(value),/invalid telemetry/)
+})
