@@ -59,6 +59,28 @@ test('an analog input cannot share the temperature bus GPIO', () => {
   assert.ok(!validateProfile(profile).some(error => error.includes('adcChannel conflicts')))
 })
 
+test('demo projection clears outputs removed from climate configuration', () => {
+  const profile = structuredClone(demoProfile)
+  const snapshot = {...cloneTelemetry(), temperatures:demoReadings(1000)}
+  snapshot.controller.mode = 'simulation'
+  snapshot.hvacZones[0].ac = true
+  snapshot.hvacZones[0].auto = true
+  profile.hvacZones[0].coolRelay = -1
+  profile.hvacZones[0].heatPumpRelay = 0
+  let projected = projectTelemetry(snapshot,profile,1000)
+  assert.equal(projected.hvacZones[0].ac,false)
+  assert.deepEqual(projected.hvacZones[0].availableEquipment,['heatPump'])
+  profile.hvacZones[0].controlMode = 'monitor-only'
+  projected = projectTelemetry(snapshot,profile,1000)
+  assert.equal(projected.hvacZones[0].auto,false)
+  assert.equal(projected.hvacZones[0].ac,false)
+  assert.equal(snapshot.hvacZones[0].ac,true)
+  snapshot.controller.mode = 'device'
+  snapshot.controller.equipmentMode = 'hardware'
+  projected = projectTelemetry(snapshot,profile,1000)
+  assert.equal(projected.hvacZones[0].ac,true)
+})
+
 test('matching label or ID never substitutes a different hardware address', () => {
   const readings = demoReadings(1000)
   readings[0].address = readings[1].address
