@@ -89,6 +89,14 @@ recovery tests remain outstanding.
   Regression tests cover deferred confirmation, no replay, and guard release after
   asynchronous and synchronous failures. All 112 frontend tests and the production
   build pass. Delayed on-device UI verification remains open.
+  Background telemetry/configuration refreshes now discard results and errors
+  when a command or configuration save crosses their request lifetime, preventing
+  old readings, inventory or failures from overwriting newer confirmation. Profile
+  saves share the command guard. Deferred-operation regression coverage passes;
+  all 113 frontend tests and the production build pass. The live demo rendered
+  normally after reload with no captured console errors; the initial development
+  hot reload had shown an empty background. The race still needs delayed device
+  request verification.
   Idle browser flows passed; pending behavior is
   currently implementation-inspected and request-helper tested. Dialog fields now
   use a disabled fieldset during pending HVAC/automation operations so users cannot

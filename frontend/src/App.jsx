@@ -985,6 +985,7 @@ export default function App() {
     const syncTelemetry = async () => {
       if (syncingTelemetry || cancelled) return
       syncingTelemetry = true
+      const refreshRevision = controlGate.current.captureRevision()
       try {
         const token = getAdminToken()
         const snapshot = await fetchTelemetry()
@@ -992,7 +993,6 @@ export default function App() {
         if (token) {
           const config = await fetchConfig(token)
           confirmedProfile = config.features
-          if (!cancelled) setSystemProfile(config.features)
           const discoveryStartedAt = Date.now()
           const discovery = await requestControllerJson('/api/temperature/devices', {headers: {Authorization: `Bearer ${token}`}}).catch(() => null)
           snapshot.temperatures = mapDiscoveredTemperatures(discovery?.devices, config.features.temperatureZones, discoveryStartedAt)
@@ -1002,14 +1002,15 @@ export default function App() {
           const contacts = await requestControllerJson('/api/security/inputs', {headers:{Authorization:`Bearer ${token}`}}).catch(() => null)
           snapshot.securityInputs = mapSecurityInputs(contacts?.sensors, confirmedProfile.securitySensors, contactsStartedAt)
         }
-        if (!cancelled) {
+        if (!cancelled && controlGate.current.canApplyRefresh(refreshRevision)) {
+          if (confirmedProfile) setSystemProfile(confirmedProfile)
           controllerSeen.current = true
           setTelemetryError('')
           setTelemetry({ ...snapshot, controller: { ...snapshot.controller, mode: 'device', online: true } })
           setApiOnline(true)
         }
       } catch (error) {
-        if (!cancelled) {
+        if (!cancelled && controlGate.current.canApplyRefresh(refreshRevision)) {
           if (controllerSeen.current || !import.meta.env.DEV) {
             setTelemetryError(`Controller refresh failed: ${error.message || 'The controller could not be reached.'} Displayed readings may be outdated; controls are unavailable until reconnection.`)
           }
@@ -1033,15 +1034,17 @@ export default function App() {
     let cancelled = false
     const token = getAdminToken()
 
+    const refreshRevision = controlGate.current.captureRevision()
+
     fetchConfig(token)
       .then(config => {
-        if (!cancelled) {
+        if (!cancelled && controlGate.current.canApplyRefresh(refreshRevision)) {
           setSystemProfile(normalizeSystemProfile(config.features))
         }
       })
       .catch(error => {
         // Retain the current inventory; failed hardware reads must not substitute demo defaults.
-        if (!cancelled && token) setControlError(error.message || 'Controller configuration could not be refreshed.')
+        if (!cancelled && token && controlGate.current.canApplyRefresh(refreshRevision)) setControlError(error.message || 'Controller configuration could not be refreshed.')
       })
 
     return () => {
@@ -1102,7 +1105,7 @@ export default function App() {
     setCreatingAutomation(false)
   }
 
-  const saveSystemProfile = async profile => {
+  const saveSystemProfile = profile => controlGate.current(async () => {
     const token = getAdminToken()
     const demo = isStandaloneDemo({development:import.meta.env.DEV, online:apiOnline, token, mode:snapshot.controller.mode})
     const saved = await persistSystemProfile(profile, {
@@ -1115,7 +1118,7 @@ export default function App() {
     }
     setSystemProfile(saved.profile)
     return saved.message
-  }
+  })
 
   const applyDemoInventory = profile => {
     if (!import.meta.env.DEV || apiOnline || getAdminToken() || snapshot.controller.mode !== 'simulation') throw new Error('Sample inventory is available only in the standalone demo')

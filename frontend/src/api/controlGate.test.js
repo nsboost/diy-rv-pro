@@ -2,6 +2,22 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createControlGate } from './controlGate.js'
 
+test('refreshes crossing a command cannot replace confirmed state or report stale failures', async () => {
+  const gate = createControlGate()
+  const before = gate.captureRevision()
+  assert.equal(gate.canApplyRefresh(before), true)
+  let finish
+  const command = gate(() => new Promise(resolve => { finish = resolve }))
+  const during = gate.captureRevision()
+  assert.equal(gate.canApplyRefresh(before), false)
+  assert.equal(gate.canApplyRefresh(during), false)
+  finish()
+  await command
+  assert.equal(gate.canApplyRefresh(before), false)
+  assert.equal(gate.canApplyRefresh(during), false)
+  assert.equal(gate.canApplyRefresh(gate.captureRevision()), true)
+})
+
 test('overlapping commands are rejected without execution or later replay', async () => {
   const gate = createControlGate()
   let finish
