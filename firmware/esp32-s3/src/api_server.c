@@ -1,4 +1,5 @@
 #include "automation_runtime.h"
+#include "automation_sources.h"
 #include "api_server.h"
 
 #include <stdlib.h>
@@ -225,6 +226,12 @@ static esp_err_t config_put_handler(httpd_req_t *request)
     }
 
     cJSON_Delete(json);
+    cJSON *previous_profile = cJSON_Parse(server_context->config->features.profile_json);
+    cJSON *next_profile = cJSON_Parse(candidate->features.profile_json);
+    bool temperature_changed = server_context->config->setup_complete != candidate->setup_complete ||
+        automation_temperature_bus_configuration_changed(previous_profile, next_profile);
+    cJSON_Delete(previous_profile);
+    cJSON_Delete(next_profile);
     esp_err_t save_result = config_store_save(candidate);
     if (save_result != ESP_OK) {
         free(candidate);
@@ -233,8 +240,8 @@ static esp_err_t config_put_handler(httpd_req_t *request)
     }
     *server_context->config = *candidate;
     free(candidate);
-    temperature_config_pending = true;
-    automation_runtime_inputs_pending();
+    temperature_config_pending = temperature_config_pending || temperature_changed;
+    if (temperature_config_pending) automation_runtime_inputs_pending();
     automation_runtime_configure(server_context->config);
     security_config_pending = security_inputs_configure(server_context->config) != ESP_OK;
 

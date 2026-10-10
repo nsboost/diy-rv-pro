@@ -13,9 +13,14 @@ void test_unrelated_profile_edits_preserve_automation_inputs(void) {
   cJSON *after = cJSON_Duplicate(before, true);
   cJSON_ReplaceItemInObjectCaseSensitive(cJSON_GetObjectItemCaseSensitive(after, "rvProfile"), "name", cJSON_CreateString("After"));
   TEST_ASSERT_FALSE(automation_input_configuration_changed(before, after));
+  TEST_ASSERT_FALSE(automation_temperature_bus_configuration_changed(before, after));
   cJSON_AddItemToArray(cJSON_GetObjectItemCaseSensitive(after, "securitySensors"), cJSON_Parse("{\"id\":\"door\",\"gpio\":4}"));
   TEST_ASSERT_TRUE(automation_input_configuration_changed(before, after));
   TEST_ASSERT_TRUE(automation_input_configuration_changed(NULL, after));
+  TEST_ASSERT_FALSE(automation_temperature_bus_configuration_changed(before, after));
+  cJSON_AddItemToArray(cJSON_GetObjectItemCaseSensitive(after, "temperatureBuses"), cJSON_Parse("{\"id\":\"bus\",\"gpio\":4}"));
+  TEST_ASSERT_TRUE(automation_temperature_bus_configuration_changed(before, after));
+  TEST_ASSERT_TRUE(automation_temperature_bus_configuration_changed(NULL, after));
   cJSON_Delete(before);
   cJSON_Delete(after);
 }

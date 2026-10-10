@@ -11,3 +11,5 @@ cJSON *automation_temperature_sources(const cJSON *profile,
 void automation_security_sources(cJSON *sources, const cJSON *profile, const cJSON *readings);
 
 bool automation_input_configuration_changed(const cJSON *previous, const cJSON *next);
+
+bool automation_temperature_bus_configuration_changed(const cJSON *previous, const cJSON *next);

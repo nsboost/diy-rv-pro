@@ -104,3 +104,10 @@ bool automation_input_configuration_changed(const cJSON *previous, const cJSON *
   }
   return false;
 }
+
+bool automation_temperature_bus_configuration_changed(const cJSON *previous, const cJSON *next) {
+  if (!cJSON_IsObject(previous) || !cJSON_IsObject(next)) return true;
+  const cJSON *before = cJSON_GetObjectItemCaseSensitive(previous, "temperatureBuses");
+  const cJSON *after = cJSON_GetObjectItemCaseSensitive(next, "temperatureBuses");
+  return !cJSON_IsArray(before) || !cJSON_IsArray(after) || !cJSON_Compare(before, after, true);
+}

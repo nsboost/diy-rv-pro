@@ -358,3 +358,8 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 - Runtime configuration compares temperature buses, addressed temperature sensors, HVAC zones and security sensors before resetting the automation engine. Unrelated RV/equipment edits preserve current activation and hold state; startup, input mapping changes and setup-status changes still reset it.
 - 24 firmware host tests passed, including unchanged-input and changed-contact profile comparisons. This does not implement activation persistence across reboots. Configuration saves still mark temperature acquisition pending restart; reducing that restart scope remains outstanding.
 - ESP32-S3 build passed: static RAM 77,872 bytes; flash 994,349 bytes. Hardware behavior not exercised.
+
+### Temperature restart scope (October 10)
+- Configuration saves now mark temperature acquisition pending restart only when temperature bus inventory or first-boot setup status changes. RV labels, notification/network settings, security sensors and addressed-sensor assignments no longer interrupt an unchanged bus by themselves. An already-pending restart stays pending until reboot; parse/allocation failure conservatively requires restart.
+- 24 firmware host tests passed with added unchanged/changed bus comparisons. Physical configuration-save/discovery behavior remains bench-unverified.
+- ESP32-S3 build passed: static RAM 77,872 bytes; flash 994,557 bytes. No hardware flashed.
