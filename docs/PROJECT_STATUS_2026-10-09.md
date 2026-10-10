@@ -398,3 +398,7 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 - Automation persistence now checks each JSON field attachment, frees unowned copies on failure, and validates the fully assembled versioned state before serialization/NVS writes. Failed allocation cannot intentionally replace the saved blob with a missing version, rules, notifications or activation field.
 - Runtime allocation-failure injection remains required; portable saved-state validation tests cover missing/malformed fields but do not execute NVS or the runtime allocator path.
 - All 27 firmware host tests and ESP32-S3 build passed: static RAM 77,872 bytes; flash 995,769 bytes. No hardware flashed.
+
+### Uncertain mutation responses (October 10)
+- Connection drops and unreadable responses for state-changing requests now explain that a change may already have been applied and require state verification before retry. Explicit HTTP rejection retains its status/error; read-only failures retain their original error. Method classification is case-insensitive; no automatic retries were introduced.
+- 93 frontend tests and production build passed. Regression covers network loss, successful HTTP with unreadable body, HTTP rejection and read-only failure. Live device network-fault verification remains pending.
