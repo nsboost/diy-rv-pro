@@ -5,7 +5,7 @@ export async function requestControllerJson(url, options = {}, {timeoutMs = 1000
   const abort = new AbortController()
   const timeout = setTimeout(() => abort.abort(), timeoutMs)
   try {
-    const response = await fetch(url, {...options, signal:abort.signal})
+    const response = await fetch(url, {...options, cache:'no-store', signal:abort.signal})
     if (!response.ok) {
       const error = new Error(`Controller request rejected (HTTP ${response.status}).`)
       error.status = response.status

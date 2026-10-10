@@ -411,3 +411,7 @@ Browser import/export verification: Export Configuration downloaded diy-rv-confi
 - Runtime tracks the activation snapshot from the last successful NVS commit. The evaluator compares its current state to that committed snapshot instead of its pre-tick state, skipping an unchanged activation already saved with an alert. Failed commits leave the committed snapshot unchanged; healthy rearming still requires persistence.
 - The snapshot is transferred from the validated record without another allocation and initialized from restored engine state at startup. Actual NVS write counts, interrupted commits and flash endurance remain unverified on hardware.
 - All 28 firmware host tests and ESP32-S3 build passed: static RAM 77,872 bytes; flash 995,821 bytes. The commit-cache behavior is implementation-inspected; host tests cover record assembly/evaluator, not NVS calls. No hardware flashed.
+
+### Fresh controller requests (October 10)
+- Controller JSON requests explicitly use browser cache mode no-store, including polling and post-command confirmation. Caller cache options cannot override this state-read policy; authentication headers and timeout cancellation remain intact. Firmware already marks JSON responses no-store.
+- All 94 frontend tests and the production build passed. Regression verifies request options and authentication preservation; physical controller cache/fault behavior remains unverified.

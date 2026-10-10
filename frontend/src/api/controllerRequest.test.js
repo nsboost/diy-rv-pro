@@ -52,3 +52,17 @@ test('read failures retain their original error', async () => {
     await assert.rejects(requestControllerJson('/api/telemetry'),error=>error === cause)
   } finally {globalThis.fetch = original}
 })
+
+test('controller state requests bypass browser caches while preserving authentication', async () => {
+  const original = globalThis.fetch
+  const headers = {Authorization:'Bearer test-token'}
+  globalThis.fetch = async (url,options) => {
+    assert.equal(options.cache,'no-store')
+    assert.equal(options.headers,headers)
+    assert.ok(options.signal instanceof AbortSignal)
+    return {ok:true,json:async()=>({current:true})}
+  }
+  try {
+    assert.deepEqual(await requestControllerJson('/api/telemetry',{headers,cache:'force-cache'}),{current:true})
+  } finally {globalThis.fetch = original}
+})
